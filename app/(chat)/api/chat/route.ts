@@ -5,6 +5,35 @@ import { deleteChatById, getChatById, saveChat } from "@/lib/mongo-chat";
 import { retrieveMemories, addMemories } from "@mem0/vercel-ai-provider";
 import { NextRequest } from "next/server";
 
+// Set your model's context window size (tokens)
+const CONTEXT_WINDOW_TOKENS = 4096; // Adjust for your model (e.g., 8192 for Gemini Pro)
+
+// Simple word count as a proxy for tokens
+function countTokens(str) {
+  if (!str) return 0;
+  return str.split(/\s+/).length;
+}
+
+function trimMessagesToContext(messages, maxTokens) {
+  let total = 0;
+  // Start from the end (most recent), work backwards
+  const trimmed = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    // Count tokens for this message
+    let msgTokens = 0;
+    if (typeof msg.content === 'string') {
+      msgTokens = countTokens(msg.content);
+    } else if (Array.isArray(msg.content)) {
+      msgTokens = msg.content.map(part => typeof part.text === 'string' ? countTokens(part.text) : 0).reduce((a, b) => a + b, 0);
+    }
+    if (total + msgTokens > maxTokens) break;
+    trimmed.unshift(msg);
+    total += msgTokens;
+  }
+  return trimmed;
+}
+
 export async function POST(request: NextRequest) {
   const { id, messages }: { id: string; messages: Array<Message> } = await request.json();
   const { userId } = getAuth(request);
@@ -16,7 +45,10 @@ export async function POST(request: NextRequest) {
     (message) => message.content.length > 0,
   );
 
-  let safeCoreMessages = coreMessages.map((msg) => {
+  // Context window handling: trim messages to fit within context window
+  const trimmedMessages = trimMessagesToContext(coreMessages, CONTEXT_WINDOW_TOKENS);
+
+  let safeCoreMessages = trimmedMessages.map((msg) => {
     if (typeof msg.content === 'string') {
       return msg;
     }
@@ -31,13 +63,13 @@ export async function POST(request: NextRequest) {
 
   const result = await streamText({
     model: geminiProModel,
-    messages: coreMessages,
+    messages: trimmedMessages,
     onFinish: async ({ responseMessages }) => {
       if (userId) {
         try {
           await saveChat({
             id,
-            messages: [...coreMessages, ...responseMessages],
+            messages: [...trimmedMessages, ...responseMessages],
             userId,
           });
           // await addMemories([...coreMessages, ...responseMessages], { user_id: userId, model: 'gemini-flash' });
