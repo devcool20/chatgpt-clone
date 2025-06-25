@@ -153,106 +153,68 @@ export const History = ({ user }: { user: any }) => {
             } label="Start a new chat" onClick={handleNewChat} />
           </div>
           
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Additional menu buttons */}
-            <nav className="flex flex-col gap-1 px-3 pb-4">
-              <SidebarItem icon={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="M21 21l-4.35-4.35"/>
-                </svg>
-              } label="Search chats" />
-              <SidebarItem icon={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-              } label="Library" />
-              <div className="h-2"></div>
-              <SidebarItem icon={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
-                </svg>
-              } label="Sora" />
-              <SidebarItem icon={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
-                </svg>
-              } label="GPTs" />
-              <SidebarItem icon={
-                <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                    <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-                  </svg>
-                </div>
-              } label="Code Copilot" />
+          {/* Chats section */}
+          <div className="px-2">
+            <div className="text-xs text-zinc-400 px-2 pt-2 pb-1">Chats</div>
+            {!user && <div className="text-zinc-500 text-sm">Login to see your chats.</div>}
+            {user && isLoading && <div className="text-zinc-500 text-sm">Loading...</div>}
+            {user && !isLoading && history.length === 0 && <div className="text-zinc-500 text-sm">No chats found.</div>}
+            {user && history.length > 0 && (
+              <ul className="flex flex-col gap-1">
+                {history.map((chat: any, index: number) => {
+                  // Defensive: ensure id and preview are strings
+                  const safeId = typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id);
+                  let safePreview = '';
+                  if (typeof chat.preview === 'string') {
+                    safePreview = chat.preview;
+                  } else if (Array.isArray(chat.preview)) {
+                    // If preview is an array of {type, text}
+                    safePreview = chat.preview.map(
+                      (part: any) => (typeof part === 'object' && part.text ? part.text : String(part))
+                    ).join(' ');
+                  } else if (typeof chat.preview === 'object' && chat.preview !== null && chat.preview.text) {
+                    safePreview = chat.preview.text;
+                  } else {
+                    safePreview = JSON.stringify(chat.preview);
+                  }
 
-            </nav>
-            
-            {/* Chats section */}
-            <div className="px-2">
-              <div className="text-xs text-zinc-400 px-2 pt-2 pb-1">Chats</div>
-              {!user && <div className="text-zinc-500 text-sm">Login to see your chats.</div>}
-              {user && isLoading && <div className="text-zinc-500 text-sm">Loading...</div>}
-              {user && !isLoading && history.length === 0 && <div className="text-zinc-500 text-sm">No chats found.</div>}
-              {user && history.length > 0 && (
-                <ul className="flex flex-col gap-1">
-                  {history.map((chat: any, index: number) => {
-                    // Defensive: ensure id and preview are strings
-                    const safeId = typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id);
-                    let safePreview = '';
-                    if (typeof chat.preview === 'string') {
-                      safePreview = chat.preview;
-                    } else if (Array.isArray(chat.preview)) {
-                      // If preview is an array of {type, text}
-                      safePreview = chat.preview.map(
-                        (part: any) => (typeof part === 'object' && part.text ? part.text : String(part))
-                      ).join(' ');
-                    } else if (typeof chat.preview === 'object' && chat.preview !== null && chat.preview.text) {
-                      safePreview = chat.preview.text;
-                    } else {
-                      safePreview = JSON.stringify(chat.preview);
+                  // Delete handler
+                  const handleDelete = async (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    try {
+                      await fetch(`/api/chat?id=${encodeURIComponent(safeId)}`, { method: 'DELETE' });
+                      mutate(); // Refresh chat history
+                    } catch (err) {
+                      toast.error('Failed to delete chat');
                     }
+                  };
 
-                    // Delete handler
-                    const handleDelete = async (e: React.MouseEvent) => {
-                      e.preventDefault();
-                      try {
-                        await fetch(`/api/chat?id=${encodeURIComponent(safeId)}`, { method: 'DELETE' });
-                        mutate(); // Refresh chat history
-                      } catch (err) {
-                        toast.error('Failed to delete chat');
-                      }
-                    };
-
-                    return (
-                      <li key={safeId || `chat-${index}`}
-                          className="group flex items-center justify-between hover:bg-zinc-800 rounded transition px-3 py-2">
-                        <Link href={`/chat/${safeId}`} className={`flex-1 min-w-0 ${safeId === id ? 'text-white' : 'text-zinc-300'}`}>
-                          <span className="truncate block text-sm">{safePreview || 'Untitled'}</span>
-                        </Link>
-                        <button
-                          onClick={handleDelete}
-                          title="Delete chat"
-                          className="ml-2 p-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100 focus:opacity-100"
-                          style={{ lineHeight: 0 }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                            <path d="M10 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                            <path d="M14 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                            <path d="M3 6H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                            <path d="M5 6V16C5 17.1046 5.89543 18 7 18H13C14.1046 18 15 17.1046 15 16V6" stroke="currentColor" strokeWidth="1.5"/>
-                            <path d="M8 6V4C8 2.89543 8.89543 2 10 2H10C11.1046 2 12 2.89543 12 4V6" stroke="currentColor" strokeWidth="1.5"/>
-                          </svg>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+                  return (
+                    <li key={safeId || `chat-${index}`}
+                        className="group flex items-center justify-between hover:bg-zinc-800 rounded transition px-3 py-2">
+                      <Link href={`/chat/${safeId}`} className={`flex-1 min-w-0 ${safeId === id ? 'text-white' : 'text-zinc-300'}`}>
+                        <span className="truncate block text-sm">{safePreview || 'Untitled'}</span>
+                      </Link>
+                      <button
+                        onClick={handleDelete}
+                        title="Delete chat"
+                        className="ml-2 p-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        style={{ lineHeight: 0 }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M10 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M14 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M3 6H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M5 6V16C5 17.1046 5.89543 18 7 18H13C14.1046 18 15 17.1046 15 16V6" stroke="currentColor" strokeWidth="1.5"/>
+                          <path d="M8 6V4C8 2.89543 8.89543 2 10 2H10C11.1046 2 12 2.89543 12 4V6" stroke="currentColor" strokeWidth="1.5"/>
+                        </svg>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
           
           {/* Upgrade plan */}

@@ -94,12 +94,14 @@ export function Chat({
   // Scroll to bottom on new message or user send
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth"
-      });
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
+
+  // Auto-scroll to bottom when messages change (only chat area)
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   // On user send, scroll to bottom immediately
   const handleSubmitAndScroll = (e?: any) => {
@@ -510,7 +512,7 @@ export function Chat({
             className="flex-1 overflow-y-auto overflow-x-hidden px-0 pt-24 pb-32 w-full max-w-full relative"
             style={{ scrollBehavior: "smooth" }}
           >
-            <div className="mx-auto w-full max-w-3xl flex flex-col gap-8 overflow-x-hidden px-4 pr-12">
+            <div className="mx-auto w-full max-w-4xl flex flex-col gap-8 overflow-x-hidden px-4 pr-12">
               {localMessages.map((msg, i) => (
                 <div
                   key={msg.id || `msg-${i}`}
