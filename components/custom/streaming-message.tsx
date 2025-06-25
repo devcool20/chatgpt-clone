@@ -32,7 +32,6 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
       bufferRef.current = safeContent;
       if (!animatingRef.current) animateNext();
     }
-    // eslint-disable-next-line
   }, [safeContent]);
 
   // Animate one character at a time from displayed to buffer
@@ -69,7 +68,6 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
       animatingRef.current = false;
       if (animationTimeout.current) clearTimeout(animationTimeout.current);
     }
-    // eslint-disable-next-line
   }, [safeContent]);
 
   // Cleanup
