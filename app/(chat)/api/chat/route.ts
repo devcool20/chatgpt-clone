@@ -1,5 +1,5 @@
 import { getAuth } from '@clerk/nextjs/server';
-import { convertToCoreMessages, Message, streamText } from "ai";
+import { convertToCoreMessages, Message, streamText, CoreMessage } from "ai";
 import { NextRequest } from "next/server";
 
 import { geminiProModel } from "@/ai";
@@ -10,12 +10,12 @@ import { deleteChatById, getChatById, saveChat } from "@/lib/mongo-chat";
 const CONTEXT_WINDOW_TOKENS = 4096; // Adjust for your model (e.g., 8192 for Gemini Pro)
 
 // Simple word count as a proxy for tokens
-function countTokens(str) {
+function countTokens(str: string) {
   if (!str) return 0;
   return str.split(/\s+/).length;
 }
 
-function trimMessagesToContext(messages, maxTokens) {
+function trimMessagesToContext(messages: CoreMessage[], maxTokens: number) {
   let total = 0;
   // Start from the end (most recent), work backwards
   const trimmed = [];
@@ -26,7 +26,7 @@ function trimMessagesToContext(messages, maxTokens) {
     if (typeof msg.content === 'string') {
       msgTokens = countTokens(msg.content);
     } else if (Array.isArray(msg.content)) {
-      msgTokens = msg.content.map(part => typeof part.text === 'string' ? countTokens(part.text) : 0).reduce((a, b) => a + b, 0);
+      msgTokens = msg.content.map((part: any) => typeof part.text === 'string' ? countTokens(part.text) : 0).reduce((a: number, b: number) => a + b, 0);
     }
     if (total + msgTokens > maxTokens) break;
     trimmed.unshift(msg);
