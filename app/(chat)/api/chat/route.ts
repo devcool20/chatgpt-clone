@@ -2,7 +2,6 @@ import { convertToCoreMessages, Message, streamText } from "ai";
 import { geminiProModel } from "@/ai";
 import { getAuth } from '@clerk/nextjs/server';
 import { deleteChatById, getChatById, saveChat } from "@/lib/mongo-chat";
-import { retrieveMemories, addMemories } from "@mem0/vercel-ai-provider";
 import { NextRequest } from "next/server";
 
 // Set your model's context window size (tokens)
@@ -35,8 +34,9 @@ function trimMessagesToContext(messages, maxTokens) {
 }
 
 export async function POST(request: NextRequest) {
-  const { id, messages }: { id: string; messages: Array<Message> } = await request.json();
-  const { userId } = getAuth(request);
+  const { id, messages, userId: clientUserId }: { id: string; messages: Array<Message>; userId?: string } = await request.json();
+  const { userId: clerkUserId } = getAuth(request);
+  const userId = clientUserId || clerkUserId;
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
   });
 
   console.log('DEBUG: safeCoreMessages', JSON.stringify(safeCoreMessages, null, 2));
-  // const memories = await retrieveMemories(safeCoreMessages, { user_id: userId, model: 'gemini-flash' });
 
   const result = await streamText({
     model: geminiProModel,
@@ -72,7 +71,6 @@ export async function POST(request: NextRequest) {
             messages: [...trimmedMessages, ...responseMessages],
             userId,
           });
-          // await addMemories([...coreMessages, ...responseMessages], { user_id: userId, model: 'gemini-flash' });
         } catch (error) {
           console.error("Failed to save chat");
         }

@@ -3,6 +3,7 @@
 import { Attachment, Message, generateId } from "ai";
 import { useChat } from "ai/react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 import { Message as PreviewMessage } from "@/components/custom/message";
 import { StreamingMessage } from "@/components/custom/streaming-message";
@@ -41,6 +42,7 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   
   const {
     messages,
@@ -53,13 +55,22 @@ export function Chat({
     reload,
   } = useChat({
     id,
-    body: { id },
+    body: { id, userId },
     initialMessages,
     maxSteps: 10,
     onFinish: () => {
       window.history.replaceState({}, "", `/chat/${id}`);
     },
   });
+
+  useEffect(() => {
+    let storedId = localStorage.getItem('mem0_user_id');
+    if (!storedId) {
+      storedId = uuidv4();
+      localStorage.setItem('mem0_user_id', storedId);
+    }
+    setUserId(storedId);
+  }, []);
 
   // Track streaming state by monitoring content changes
   useEffect(() => {
