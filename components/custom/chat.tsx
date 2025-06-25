@@ -208,7 +208,7 @@ export function Chat({
     console.log('Calling reload with messages:', newMessages);
 
     // Ensure reload uses the latest messages (microtask to guarantee state update)
-    Promise.resolve().then(() => reload({ messages: newMessages }));
+    Promise.resolve().then(() => reload());
   };
 
   // Sync localMessages with messages from useChat
