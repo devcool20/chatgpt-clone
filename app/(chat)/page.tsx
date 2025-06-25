@@ -1,7 +1,11 @@
-import { Chat } from "@/components/custom/chat";
-import { generateUUID } from "@/lib/utils";
+'use client';
+import { useUser } from '@clerk/nextjs';
+import { Chat } from '@/components/custom/chat';
+import { generateUUID } from '@/lib/utils';
 
-export default async function Page() {
+export default function ChatPage() {
+  const { isSignedIn, isLoaded } = useUser();
+  if (!isLoaded) return null;
   const id = generateUUID();
-  return <Chat key={id} id={id} initialMessages={[]} />;
+  return <Chat id={id} isSignedIn={isSignedIn} initialMessages={[]} />;
 }

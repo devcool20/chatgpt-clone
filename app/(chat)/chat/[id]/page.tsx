@@ -1,35 +1,25 @@
-import { CoreMessage } from "ai";
-import { notFound } from "next/navigation";
+'use client';
+import { useUser, SignInButton } from '@clerk/nextjs';
+import { useParams } from 'next/navigation';
+import { Chat } from '@/components/custom/chat';
 
-import { auth } from "@/app/(auth)/auth";
-import { Chat as PreviewChat } from "@/components/custom/chat";
-import { getChatById } from "@/db/queries";
-import { Chat } from "@/db/schema";
-import { convertToUIMessages } from "@/lib/utils";
+export default function ChatDetailPage() {
+  const { isSignedIn, isLoaded } = useUser();
+  const params = useParams();
 
-export default async function Page({ params }: { params: any }) {
-  const { id } = params;
-  const chatFromDb = await getChatById({ id });
+  if (!isLoaded) return null;
 
-  if (!chatFromDb) {
-    notFound();
-  }
-
-  // type casting and converting messages to UI messages
-  const chat: Chat = {
-    ...chatFromDb,
-    messages: convertToUIMessages(chatFromDb.messages as Array<CoreMessage>),
-  };
-
-  const session = await auth();
-
-  if (!session || !session.user) {
-    return notFound();
-  }
-
-  if (session.user.id !== chat.userId) {
-    return notFound();
-  }
-
-  return <PreviewChat id={chat.id} initialMessages={chat.messages} />;
+  return (
+    <div>
+      {!isSignedIn && (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p>Please sign in to view this chat.</p>
+          <SignInButton mode="modal">
+            <button className="btn">Sign In</button>
+          </SignInButton>
+        </div>
+      )}
+      <Chat id={params.id as string} isSignedIn={isSignedIn} initialMessages={[]} />
+    </div>
+  );
 }

@@ -3,14 +3,16 @@
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { User } from "next-auth";
-import { useEffect, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+// Remove next-auth import - using generic user type instead
+import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { Button } from "../ui/button";
+import { generateUUID } from "@/lib/utils";
 
-import { Chat } from "@/db/schema";
-import { fetcher, getTitleFromChat } from "@/lib/utils";
+// Remove db schema import as it's no longer needed
+// Remove unused utility imports
 
 import {
   InfoIcon,
@@ -29,7 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,198 +45,229 @@ import {
   SheetTitle,
 } from "../ui/sheet";
 
-export const History = ({ user }: { user: User | undefined }) => {
+// Sidebar context
+const SidebarContext = createContext({ isOpen: true, setIsOpen: (_: boolean) => {} });
+export const useSidebar = () => useContext(SidebarContext);
+
+export const SidebarProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+};
+
+// SidebarItem component for menu buttons
+function SidebarItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
+  return (
+    <button
+      className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition w-full text-left text-sm"
+      onClick={onClick}
+      type="button"
+    >
+      <div className="flex items-center justify-center w-4 h-4">
+        {icon}
+      </div>
+      <span className="text-zinc-200">{label}</span>
+    </button>
+  );
+}
+
+export const History = ({ user }: { user: any }) => {
   const { id } = useParams();
   const pathname = usePathname();
+  const { isOpen, setIsOpen } = useSidebar();
+  const router = useRouter();
+  const { data: history, isLoading, mutate } = useSWR(user ? "/api/history" : null, async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch");
+    return res.json();
+  }, { fallbackData: [] });
 
-  const [isHistoryVisible, setIsHistoryVisible] = useState(false);
-  const {
-    data: history,
-    isLoading,
-    mutate,
-  } = useSWR<Array<Chat>>(user ? "/api/history" : null, fetcher, {
-    fallbackData: [],
-  });
+  useEffect(() => { mutate(); }, [pathname, mutate]);
 
-  useEffect(() => {
-    mutate();
-  }, [pathname, mutate]);
-
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  const handleDelete = async () => {
-    const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
-      method: "DELETE",
+  // Handler for new chat
+  const handleNewChat = async () => {
+    const newId = generateUUID();
+    // Create the chat in the DB immediately
+    await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: newId, messages: [] }),
     });
-
-    toast.promise(deletePromise, {
-      loading: "Deleting chat...",
-      success: () => {
-        mutate((history) => {
-          if (history) {
-            return history.filter((h) => h.id !== id);
-          }
-        });
-        return "Chat deleted successfully";
-      },
-      error: "Failed to delete chat",
-    });
-
-    setShowDeleteDialog(false);
+    router.push(`/chat/${newId}`);
+    mutate(); // Refresh sidebar
   };
+
+  // Sidebar icons for collapsed state
+  const sidebarIcons = [
+    {
+      label: "New chat",
+      icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>,
+      href: "/"
+    },
+    {
+      label: "Search chats",
+      icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+      href: "#"
+    },
+    {
+      label: "Library",
+      icon: <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/></svg>,
+      href: "#"
+    }
+  ];
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="p-1.5 h-fit"
-        onClick={() => {
-          setIsHistoryVisible(true);
-        }}
-      >
-        <MenuIcon />
-      </Button>
-
-      <Sheet
-        open={isHistoryVisible}
-        onOpenChange={(state) => {
-          setIsHistoryVisible(state);
-        }}
-      >
-        <SheetContent side="left" className="p-3 w-80 bg-muted">
-          <SheetHeader>
-            <VisuallyHidden.Root>
-              <SheetTitle className="text-left">History</SheetTitle>
-              <SheetDescription className="text-left">
-                {history === undefined ? "loading" : history.length} chats
-              </SheetDescription>
-            </VisuallyHidden.Root>
-          </SheetHeader>
-
-          <div className="text-sm flex flex-row items-center justify-between">
-            <div className="flex flex-row gap-2">
-              <div className="dark:text-zinc-300">History</div>
-
-              <div className="dark:text-zinc-400 text-zinc-500">
-                {history === undefined ? "loading" : history.length} chats
-              </div>
-            </div>
+      {/* Collapsed sidebar (icons only) */}
+      {!isOpen && (
+        <div className="fixed left-0 top-0 h-full w-16 bg-zinc-900 flex flex-col items-center py-4 z-40 border-r border-zinc-800">
+          <Button variant="ghost" className="mb-4" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
+            <MenuIcon />
+          </Button>
+          <div className="flex flex-col gap-4 items-center mt-2">
+            {sidebarIcons.map((item, index) => (
+              <Link href={item.href} key={`sidebar-${item.label}-${index}`} className="text-zinc-400 hover:text-white flex flex-col items-center" title={item.label}>
+                {item.icon}
+              </Link>
+            ))}
           </div>
-
-          <div className="mt-10 flex flex-col">
-            {user && (
-              <Button
-                className="font-normal text-sm flex flex-row justify-between text-white"
-                asChild
-              >
-                <Link href="/">
-                  <div>Start a new chat</div>
-                  <PencilEditIcon size={14} />
-                </Link>
-              </Button>
-            )}
-
-            <div className="flex flex-col overflow-y-scroll p-1 h-[calc(100dvh-124px)]">
-              {!user ? (
-                <div className="text-zinc-500 h-dvh w-full flex flex-row justify-center items-center text-sm gap-2">
-                  <InfoIcon />
-                  <div>Login to save and revisit previous chats!</div>
+        </div>
+      )}
+      {/* Open sidebar (full) */}
+      {isOpen && (
+        <div className="fixed left-0 top-0 h-full w-72 bg-zinc-900 flex flex-col py-4 z-40 border-r border-zinc-800 transition-all">
+          <div className="flex flex-row items-center justify-between px-4 mb-4">
+            <span className="text-lg font-bold text-white">Chat History</span>
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Collapse sidebar">
+              <MenuIcon />
+            </Button>
+          </div>
+          <div className="px-3 mb-4">
+            <SidebarItem icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            } label="Start a new chat" onClick={handleNewChat} />
+          </div>
+          
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Additional menu buttons */}
+            <nav className="flex flex-col gap-1 px-3 pb-4">
+              <SidebarItem icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                </svg>
+              } label="Search chats" />
+              <SidebarItem icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              } label="Library" />
+              <div className="h-2"></div>
+              <SidebarItem icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+                </svg>
+              } label="Sora" />
+              <SidebarItem icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+              } label="GPTs" />
+              <SidebarItem icon={
+                <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
+                    <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                  </svg>
                 </div>
-              ) : null}
+              } label="Code Copilot" />
 
-              {!isLoading && history?.length === 0 && user ? (
-                <div className="text-zinc-500 h-dvh w-full flex flex-row justify-center items-center text-sm gap-2">
-                  <InfoIcon />
-                  <div>No chats found</div>
-                </div>
-              ) : null}
+            </nav>
+            
+            {/* Chats section */}
+            <div className="px-2">
+              <div className="text-xs text-zinc-400 px-2 pt-2 pb-1">Chats</div>
+              {!user && <div className="text-zinc-500 text-sm">Login to see your chats.</div>}
+              {user && isLoading && <div className="text-zinc-500 text-sm">Loading...</div>}
+              {user && !isLoading && history.length === 0 && <div className="text-zinc-500 text-sm">No chats found.</div>}
+              {user && history.length > 0 && (
+                <ul className="flex flex-col gap-1">
+                  {history.map((chat: any, index: number) => {
+                    // Defensive: ensure id and preview are strings
+                    const safeId = typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id);
+                    let safePreview = '';
+                    if (typeof chat.preview === 'string') {
+                      safePreview = chat.preview;
+                    } else if (Array.isArray(chat.preview)) {
+                      // If preview is an array of {type, text}
+                      safePreview = chat.preview.map(
+                        (part: any) => (typeof part === 'object' && part.text ? part.text : String(part))
+                      ).join(' ');
+                    } else if (typeof chat.preview === 'object' && chat.preview !== null && chat.preview.text) {
+                      safePreview = chat.preview.text;
+                    } else {
+                      safePreview = JSON.stringify(chat.preview);
+                    }
 
-              {isLoading && user ? (
-                <div className="flex flex-col">
-                  {[44, 32, 28, 52].map((item) => (
-                    <div key={item} className="p-2 my-[2px]">
-                      <div
-                        className={`w-${item} h-[20px] rounded-md bg-zinc-200 dark:bg-zinc-600 animate-pulse`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : null}
+                    // Delete handler
+                    const handleDelete = async (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      try {
+                        await fetch(`/api/chat?id=${encodeURIComponent(safeId)}`, { method: 'DELETE' });
+                        mutate(); // Refresh chat history
+                      } catch (err) {
+                        toast.error('Failed to delete chat');
+                      }
+                    };
 
-              {history &&
-                history.map((chat) => (
-                  <div
-                    key={chat.id}
-                    className={cx(
-                      "flex flex-row items-center gap-6 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md pr-2",
-                      { "bg-zinc-200 dark:bg-zinc-700": chat.id === id },
-                    )}
-                  >
-                    <Button
-                      variant="ghost"
-                      className={cx(
-                        "hover:bg-zinc-200 dark:hover:bg-zinc-700 justify-between p-0 text-sm font-normal flex flex-row items-center gap-2 pr-2 w-full transition-none",
-                      )}
-                      asChild
-                    >
-                      <Link
-                        href={`/chat/${chat.id}`}
-                        className="text-ellipsis overflow-hidden text-left py-2 pl-2 rounded-lg outline-zinc-900"
-                      >
-                        {getTitleFromChat(chat)}
-                      </Link>
-                    </Button>
-
-                    <DropdownMenu modal={true}>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          className="p-0 h-fit font-normal text-zinc-500 transition-none hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                          variant="ghost"
+                    return (
+                      <li key={safeId || `chat-${index}`}
+                          className="group flex items-center justify-between hover:bg-zinc-800 rounded transition px-3 py-2">
+                        <Link href={`/chat/${safeId}`} className={`flex-1 min-w-0 ${safeId === id ? 'text-white' : 'text-zinc-300'}`}>
+                          <span className="truncate block text-sm">{safePreview || 'Untitled'}</span>
+                        </Link>
+                        <button
+                          onClick={handleDelete}
+                          title="Delete chat"
+                          className="ml-2 p-1 rounded hover:bg-red-600 transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          style={{ lineHeight: 0 }}
                         >
-                          <MoreHorizontalIcon />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="left" className="z-[60]">
-                        <DropdownMenuItem asChild>
-                          <Button
-                            className="flex flex-row gap-2 items-center justify-start w-full h-fit font-normal p-1.5 rounded-sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setDeleteId(chat.id);
-                              setShowDeleteDialog(true);
-                            }}
-                          >
-                            <TrashIcon />
-                            <div>Delete</div>
-                          </Button>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M10 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M14 8V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M3 6H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M5 6V16C5 17.1046 5.89543 18 7 18H13C14.1046 18 15 17.1046 15 16V6" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M8 6V4C8 2.89543 8.89543 2 10 2H10C11.1046 2 12 2.89543 12 4V6" stroke="currentColor" strokeWidth="1.5"/>
+                          </svg>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              chat and remove it from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          
+          {/* Upgrade plan */}
+          <div className="px-4 py-4 border-t border-zinc-800 flex flex-col gap-2">
+            <button className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="7" y1="17" x2="17" y2="7"/>
+                <polyline points="7,7 17,7 17,17"/>
+              </svg>
+              Upgrade plan
+            </button>
+            <span className="text-xs text-zinc-500">More access to the best models</span>
+          </div>
+        </div>
+      )}
     </>
   );
 };

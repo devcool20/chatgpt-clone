@@ -1,10 +1,11 @@
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
 
-import { auth, signOut } from "@/app/(auth)/auth";
+import { UserButton, SignInButton, useUser } from '@clerk/nextjs';
 
-import { History } from "./history";
-import { SlashIcon } from "./icons";
+import { SlashIcon, MoreHorizontalIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
 import {
@@ -13,71 +14,66 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { History, useSidebar } from "./history";
+import { useParams, useRouter } from "next/navigation";
 
-export const Navbar = async () => {
-  let session = await auth();
+export const Navbar = () => {
+  const { user, isSignedIn } = useUser();
+  const { isOpen } = useSidebar();
+  const params = useParams();
+  const router = useRouter();
+
+  // Delete conversation handler
+  const handleDelete = () => {
+    // You may want to call your API here to delete the conversation
+    // For now, just redirect to home
+    router.push("/");
+  };
 
   return (
     <>
-      <div className="bg-background absolute top-0 left-0 w-dvw py-2 px-3 justify-between flex flex-row items-center z-30">
-        <div className="flex flex-row gap-3 items-center">
-          <History user={session?.user} />
-          <div className="flex flex-row gap-2 items-center">
-            <Image
-              src="/images/gemini-logo.png"
-              height={20}
-              width={20}
-              alt="gemini logo"
-            />
-            <div className="text-zinc-500">
-              <SlashIcon size={16} />
-            </div>
-            <div className="text-sm dark:text-zinc-300 truncate w-28 md:w-fit">
-              Next.js Gemini Chatbot
-            </div>
+      <div className="fixed top-0 left-0 w-full py-2 px-3 flex flex-row items-center z-50 bg-transparent">
+        <div className="flex flex-row gap-3 items-center min-w-[72px]">
+          <History user={user} />
+        </div>
+        <div className={`text-lg font-semibold text-white tracking-tight select-none transition-all duration-300 ml-6 mr-4`}>ChatGPT</div>
+        <div className="flex-1 flex justify-center">
+          <div className="text-zinc-300 text-base font-medium select-none flex items-center gap-1">
+            Saved memory full
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="inline-block ml-1 text-zinc-400"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">i</text></svg>
           </div>
         </div>
-
-        {session ? (
+        <div className="flex flex-row items-center gap-2">
+          {/* Three dots menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                className="py-1.5 px-2 h-fit font-normal"
-                variant="secondary"
-              >
-                {session.user?.email}
-              </Button>
+              <button className="rounded-full p-2 hover:bg-zinc-800 transition-colors" aria-label="More options">
+                <MoreHorizontalIcon />
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <ThemeToggle />
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem disabled>
+                <span className="flex items-center gap-2">
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 6V4h8v2" stroke="currentColor" strokeWidth="2"/></svg>
+                  Archive
+                </span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="p-1 z-50">
-                <form
-                  className="w-full"
-                  action={async () => {
-                    "use server";
-
-                    await signOut({
-                      redirectTo: "/",
-                    });
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="w-full text-left px-1 py-0.5 text-red-500"
-                  >
-                    Sign out
-                  </button>
-                </form>
+              <DropdownMenuItem onClick={handleDelete} className="text-red-500 focus:text-red-600">
+                <span className="flex items-center gap-2">
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="5" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M10 11v4" stroke="currentColor" strokeWidth="2"/><path d="M14 11v4" stroke="currentColor" strokeWidth="2"/><path d="M9 6V4h6v2" stroke="currentColor" strokeWidth="2"/></svg>
+                  Delete
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : (
-          <Button className="py-1.5 px-2 h-fit font-normal text-white" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-        )}
+          {isSignedIn ? (
+            <UserButton afterSignOutUrl="/" />
+          ) : (
+            <SignInButton mode="modal">
+              <Button className="py-1.5 px-2 h-fit font-normal text-white">Login</Button>
+            </SignInButton>
+          )}
+        </div>
       </div>
     </>
   );

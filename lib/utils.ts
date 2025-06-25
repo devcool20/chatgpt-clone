@@ -8,8 +8,6 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { Chat } from "@/db/schema";
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -126,13 +124,4 @@ export function convertToUIMessages(
   }, []);
 }
 
-export function getTitleFromChat(chat: Chat) {
-  const messages = convertToUIMessages(chat.messages as Array<CoreMessage>);
-  const firstMessage = messages[0];
-
-  if (!firstMessage) {
-    return "Untitled";
-  }
-
-  return firstMessage.content;
-}
+// getTitleFromChat function removed as Chat schema is no longer available

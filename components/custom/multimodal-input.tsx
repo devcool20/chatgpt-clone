@@ -21,14 +21,14 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Help me book a flight",
-    label: "from San Francisco to London",
-    action: "Help me book a flight from San Francisco to London",
+    title: "Explain quantum computing",
+    label: "in simple terms",
+    action: "Explain quantum computing in simple terms",
   },
   {
-    title: "What is the status",
-    label: "of flight BA142 flying tmrw?",
-    action: "What is the status of flight BA142 flying tmrw?",
+    title: "Write a poem",
+    label: "about the ocean",
+    action: "Write a poem about the ocean",
   },
 ];
 
@@ -42,6 +42,7 @@ export function MultimodalInput({
   messages,
   append,
   handleSubmit,
+  isSignedIn = true,
 }: {
   input: string;
   setInput: (value: string) => void;
@@ -60,6 +61,7 @@ export function MultimodalInput({
     },
     chatRequestOptions?: ChatRequestOptions,
   ) => void;
+  isSignedIn?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -98,30 +100,64 @@ export function MultimodalInput({
   }, [attachments, handleSubmit, setAttachments, width]);
 
   const uploadFile = async (file: File) => {
+    const isImage = file.type.startsWith("image");
     const formData = new FormData();
     formData.append("file", file);
 
-    try {
-      const response = await fetch(`/api/files/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType: contentType,
-        };
-      } else {
-        const { error } = await response.json();
-        toast.error(error);
+    if (isImage) {
+      formData.append("upload_preset", "unsigned-chatgpt");
+      try {
+        const response = await fetch("https://api.cloudinary.com/v1_1/dgrp3htif/auto/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            url: data.secure_url,
+            name: data.original_filename || file.name,
+            contentType: file.type,
+            publicId: data.public_id,
+            size: file.size,
+            width: data.width,
+            height: data.height,
+            format: data.format,
+          };
+        } else {
+          const { error } = await response.json();
+          toast.error(error);
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error("Failed to upload file, please try again!");
       }
-    } catch (error) {
-      toast.error("Failed to upload file, please try again!");
+    } else {
+      // Non-image: use signed upload via API route
+      try {
+        const response = await fetch("/api/files/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            url: data.url,
+            name: data.originalFilename || file.name,
+            contentType: data.contentType || file.type,
+            publicId: data.publicId,
+            size: data.size,
+            width: data.width,
+            height: data.height,
+            format: data.format,
+          };
+        } else {
+          const { error } = await response.json();
+          toast.error(error);
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error("Failed to upload file, please try again!");
+      }
     }
   };
 
@@ -168,12 +204,15 @@ export function MultimodalInput({
               >
                 <button
                   onClick={async () => {
+                    if (!isSignedIn) return;
                     append({
                       role: "user",
                       content: suggestedAction.action,
                     });
                   }}
-                  className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
+                  className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col disabled:opacity-50"
+                  disabled={!isSignedIn}
+                  title={!isSignedIn ? 'Sign in to use this' : ''}
                 >
                   <span className="font-medium">{suggestedAction.title}</span>
                   <span className="text-zinc-500 dark:text-zinc-400">
@@ -192,12 +231,19 @@ export function MultimodalInput({
         multiple
         onChange={handleFileChange}
         tabIndex={-1}
+        disabled={!isSignedIn}
       />
 
       {(attachments.length > 0 || uploadQueue.length > 0) && (
-        <div className="flex flex-row gap-2 overflow-x-scroll">
-          {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
+        <div className="flex flex-row gap-2 overflow-x-scroll pb-2">
+          {attachments.map((attachment, index) => (
+            <PreviewAttachment 
+              key={attachment.url} 
+              attachment={attachment} 
+              onRemove={() => {
+                setAttachments(prev => prev.filter((_, i) => i !== index));
+              }}
+            />
           ))}
 
           {uploadQueue.map((filename) => (
@@ -216,58 +262,50 @@ export function MultimodalInput({
 
       <Textarea
         ref={textareaRef}
-        placeholder="Send a message..."
         value={input}
         onChange={handleInput}
-        className="min-h-[24px] overflow-hidden resize-none rounded-lg text-base bg-muted border-none"
-        rows={3}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-
-            if (isLoading) {
-              toast.error("Please wait for the model to finish its response!");
-            } else {
-              submitForm();
-            }
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!isSignedIn) return;
+            submitForm();
           }
         }}
+        placeholder={isSignedIn ? "Type your message..." : "Sign in to chat..."}
+        className="w-full resize-none rounded border p-2"
+        disabled={!isSignedIn}
       />
-
-      {isLoading ? (
+      {!isSignedIn && (
+        <div className="text-center text-zinc-400 text-xs mt-2">Sign in to chat and use all features.</div>
+      )}
+      <div className="flex flex-row gap-2 items-end">
         <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 text-white"
-          onClick={(event) => {
-            event.preventDefault();
-            stop();
-          }}
-        >
-          <StopIcon size={14} />
-        </Button>
-      ) : (
-        <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 text-white"
-          onClick={(event) => {
-            event.preventDefault();
+          type="button"
+          onClick={() => {
+            if (!isSignedIn) return;
             submitForm();
           }}
-          disabled={input.length === 0 || uploadQueue.length > 0}
+          disabled={isLoading || !input.trim() || !isSignedIn}
         >
-          <ArrowUpIcon size={14} />
+          <ArrowUpIcon />
         </Button>
-      )}
-
-      <Button
-        className="rounded-full p-1.5 h-fit absolute bottom-2 right-10 m-0.5 dark:border-zinc-700"
-        onClick={(event) => {
-          event.preventDefault();
-          fileInputRef.current?.click();
-        }}
-        variant="outline"
-        disabled={isLoading}
-      >
-        <PaperclipIcon size={14} />
-      </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={stop}
+          disabled={!isLoading || !isSignedIn}
+        >
+          <StopIcon />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!isSignedIn}
+        >
+          <PaperclipIcon />
+        </Button>
+      </div>
     </div>
   );
 }

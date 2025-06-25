@@ -1,8 +1,11 @@
 import { Metadata } from "next";
 import { Toaster } from "sonner";
+import { ClerkProvider } from '@clerk/nextjs';
 
 import { Navbar } from "@/components/custom/navbar";
 import { ThemeProvider } from "@/components/custom/theme-provider";
+import { SidebarProvider, useSidebar } from "@/components/custom/history";
+import MainContent from "@/components/custom/MainContent";
 
 import "./globals.css";
 
@@ -18,19 +21,23 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Toaster position="top-center" />
-          <Navbar />
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <SidebarProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body className="antialiased w-full h-full overflow-x-hidden">
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster position="top-center" />
+              <Navbar />
+              <MainContent>{children}</MainContent>
+            </ThemeProvider>
+          </body>
+        </html>
+      </SidebarProvider>
+    </ClerkProvider>
   );
 }
