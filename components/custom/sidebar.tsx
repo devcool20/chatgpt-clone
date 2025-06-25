@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Menu } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
   chats: { id: string; title: string }[];
@@ -16,7 +16,7 @@ export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
         onClick={() => setOpen(true)}
         aria-label="Open sidebar"
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="size-6" />
       </button>
 
       {/* Overlay */}
@@ -33,9 +33,9 @@ export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
         style={{ minWidth: 256 }}
       >
         {/* Header with logo and collapse button */}
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6">
+            <div className="size-6">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.078 6.078 0 0 0 6.525 2.9 5.973 5.973 0 0 0 4.233 1.736c4.014 0 6.301-5.112 3.905-8.777Z" fill="currentColor"/>
                 <path d="M9.09 13.28h5.82c.833 0 1.356-.665 1.356-1.399 0-.734-.523-1.399-1.356-1.399H9.09c-.833 0-1.356.665-1.356 1.399 0 .734.523 1.399 1.356 1.399Z" fill="#171717"/>
@@ -87,7 +87,7 @@ export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
             </svg>
           } label="GPTs" />
           <SidebarItem icon={
-            <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
+            <div className="size-4 rounded-full bg-purple-500 flex items-center justify-center">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
                 <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
               </svg>
@@ -161,7 +161,7 @@ export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
         </div>
 
         {/* Upgrade plan */}
-        <div className="px-4 py-4 border-t border-zinc-800 flex flex-col gap-2">
+        <div className="p-4 border-t border-zinc-800 flex flex-col gap-2">
           <button className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="7" y1="17" x2="17" y2="7"/>
@@ -178,8 +178,8 @@ export default function Sidebar({ chats = [], activeChatId, onChatSelect }: {
 
 function SidebarItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <button className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition w-full text-left text-sm">
-      <div className="flex items-center justify-center w-4 h-4">
+    <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/50 transition w-full text-left text-sm">
+      <div className="flex items-center justify-center size-4">
         {icon}
       </div>
       <span className="text-zinc-200">{label}</span>

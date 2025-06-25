@@ -1,6 +1,7 @@
 import { getAuth } from '@clerk/nextjs/server';
-import { getChatsByUserId } from '@/lib/mongo-chat';
 import { NextRequest } from 'next/server';
+
+import { getChatsByUserId } from '@/lib/mongo-chat';
 
 export async function GET(request: NextRequest) {
   const { userId } = getAuth(request);

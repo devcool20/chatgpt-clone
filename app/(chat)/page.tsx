@@ -1,5 +1,6 @@
 'use client';
 import { useUser } from '@clerk/nextjs';
+
 import { Chat } from '@/components/custom/chat';
 import { generateUUID } from '@/lib/utils';
 

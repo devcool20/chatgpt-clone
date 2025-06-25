@@ -2,23 +2,20 @@
 
 import { Attachment, Message, generateId } from "ai";
 import { useChat } from "ai/react";
+import { ClipboardIcon , SendHorizonal, Mic , ArrowDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
+import { useSidebar } from "@/components/custom/history";
 import { Message as PreviewMessage } from "@/components/custom/message";
 import { StreamingMessage } from "@/components/custom/streaming-message";
 import { useScrollToBottom } from "@/components/custom/use-scroll-to-bottom";
-import { useSidebar } from "@/components/custom/history";
 
+import { PencilEditIcon , PaperclipIcon } from "./icons";
 import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
-import { PencilEditIcon } from "./icons";
 import { Button } from "../ui/button";
-import { ClipboardIcon } from "lucide-react";
 import { Input } from "../ui/input";
-import { SendHorizonal, Mic } from "lucide-react";
-import { ArrowDown } from "lucide-react";
-import { PaperclipIcon } from "./icons";
 
 export function Chat({
   id,
@@ -415,7 +412,7 @@ export function Chat({
                         style={{ width: 64, height: 64 }}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center w-16 h-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                      <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
                         <span className="text-2xl">📄</span>
                       </div>
                     )}
@@ -435,7 +432,7 @@ export function Chat({
                 ))}
                 {uploadQueue.map((filename, index) => (
                   <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
-                    <div className="flex flex-col items-center justify-center w-16 h-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                    <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
                       <div className="animate-spin text-zinc-500">⏳</div>
                     </div>
                     <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
@@ -472,7 +469,7 @@ export function Chat({
                 aria-label="Send"
                 style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
               >
-                <SendHorizonal className="w-5 h-5" />
+                <SendHorizonal className="size-5" />
               </Button>
               {isCurrentlyStreaming && (
                 <Button
@@ -488,7 +485,7 @@ export function Chat({
                   }}
                   aria-label="Stop"
                 >
-                  <span className="w-5 h-5 inline-flex items-center justify-center">&#9632;</span>
+                  <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
                 </Button>
               )}
               <Button
@@ -510,7 +507,7 @@ export function Chat({
                 aria-label="Mic"
                 tabIndex={-1}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className="size-5" />
               </Button>
             </form>
           </div>
@@ -545,7 +542,7 @@ export function Chat({
                               />
                             ) : (
                               <div key={attachment.url || attachment.name || `attachment-${i}`} className="flex flex-col items-center max-w-16">
-                                <div className="flex flex-col items-center justify-center w-10 h-10 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                                <div className="flex flex-col items-center justify-center size-10 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
                                   <span className="text-lg">📄</span>
                                 </div>
                                 <div className="text-xs text-zinc-500 max-w-12 truncate mt-1 text-center" title={attachment.name}>
@@ -578,7 +575,7 @@ export function Chat({
                           title="Copy"
                           style={{ minWidth: 24, minHeight: 24 }}
                         >
-                          <span className="w-4 h-4 inline-flex items-center justify-center"><ClipboardIcon /></span>
+                          <span className="size-4 inline-flex items-center justify-center"><ClipboardIcon /></span>
                         </button>
                         <button
                           onClick={() => editingId === msg.id ? handleEditSave(msg.id) : handleEdit(msg.id, typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
@@ -586,7 +583,7 @@ export function Chat({
                           title="Edit"
                           style={{ minWidth: 24, minHeight: 24 }}
                         >
-                          <span className="w-4 h-4 inline-flex items-center justify-center"><PencilEditIcon /></span>
+                          <span className="size-4 inline-flex items-center justify-center"><PencilEditIcon /></span>
                         </button>
                       </div>
                     </div>
@@ -624,7 +621,7 @@ export function Chat({
                           title="Copy"
                           style={{ minWidth: 24, minHeight: 24 }}
                         >
-                          <span className="w-4 h-4 inline-flex items-center justify-center"><ClipboardIcon /></span>
+                          <span className="size-4 inline-flex items-center justify-center"><ClipboardIcon /></span>
                         </button>
                       </div>
                     </div>
@@ -645,17 +642,17 @@ export function Chat({
                 });
               }
             }}
-            className={`fixed bottom-36 left-1/2 transform -translate-x-1/2 z-50 bg-[#2f2f2f] text-white rounded-full shadow-lg w-8 h-8 flex items-center justify-center border border-zinc-600 hover:bg-zinc-700 transition-all ${
+            className={`fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-[#2f2f2f] text-white rounded-full shadow-lg size-8 flex items-center justify-center border border-zinc-600 hover:bg-zinc-700 transition-all${
               showScrollDown ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             aria-label="Scroll to bottom"
           >
-            <ArrowDown className="w-4 h-4" />
+            <ArrowDown className="size-4" />
                       </button>
             
           {/* File previews - main chat area */}
           {(attachments.length > 0 || uploadQueue.length > 0) && (
-            <div className="w-full fixed left-0 right-0 bottom-24 z-10 flex justify-center pointer-events-none">
+            <div className="w-full fixed inset-x-0 bottom-24 z-10 flex justify-center pointer-events-none">
               <div className="w-full max-w-3xl mx-auto mb-4 pointer-events-auto">
                 <div className="flex flex-row flex-wrap gap-3 pb-2 px-6">
                   {attachments.map((attachment, index) => (
@@ -668,7 +665,7 @@ export function Chat({
                           style={{ width: 64, height: 64 }}
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center w-16 h-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                        <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
                           <span className="text-2xl">📄</span>
                         </div>
                       )}
@@ -688,7 +685,7 @@ export function Chat({
                   ))}
                   {uploadQueue.map((filename, index) => (
                     <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
-                      <div className="flex flex-col items-center justify-center w-16 h-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                      <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
                         <div className="animate-spin text-zinc-500">⏳</div>
                       </div>
                       <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
@@ -701,7 +698,7 @@ export function Chat({
             
           {/* Input bar */}
           <form
-            className="w-full fixed left-0 right-0 bottom-0 z-10 flex justify-center pointer-events-none"
+            className="w-full fixed inset-x-0 bottom-0 z-10 flex justify-center pointer-events-none"
             onSubmit={handleSubmitAndScroll}
             style={{ background: "transparent" }}
           >
@@ -729,7 +726,7 @@ export function Chat({
                 aria-label="Send"
                 style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
               >
-                <SendHorizonal className="w-5 h-5" />
+                <SendHorizonal className="size-5" />
               </Button>
               {isCurrentlyStreaming && (
                 <Button
@@ -745,7 +742,7 @@ export function Chat({
                   }}
                   aria-label="Stop"
                 >
-                  <span className="w-5 h-5 inline-flex items-center justify-center">&#9632;</span>
+                  <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
                 </Button>
               )}
               <Button
@@ -767,7 +764,7 @@ export function Chat({
                 aria-label="Mic"
                 tabIndex={-1}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className="size-5" />
               </Button>
             </div>
           </form>
@@ -776,7 +773,7 @@ export function Chat({
       
       {/* Footer text - fixed position */}
       <div 
-        className={`fixed bottom-0 right-0 bg-[#18181a] pt-2 pb-2 text-center text-xs text-gray-400 z-50 transition-all duration-300 ${
+        className={`fixed bottom-0 right-0 bg-[#18181a] py-2 text-center text-xs text-gray-400 z-50 transition-all duration-300 ${
           sidebarOpen ? 'left-72' : 'left-16'
         }`}
       >

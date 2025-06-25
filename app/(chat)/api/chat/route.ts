@@ -1,8 +1,10 @@
-import { convertToCoreMessages, Message, streamText } from "ai";
-import { geminiProModel } from "@/ai";
 import { getAuth } from '@clerk/nextjs/server';
-import { deleteChatById, getChatById, saveChat } from "@/lib/mongo-chat";
+import { convertToCoreMessages, Message, streamText } from "ai";
 import { NextRequest } from "next/server";
+
+import { geminiProModel } from "@/ai";
+import { deleteChatById, getChatById, saveChat } from "@/lib/mongo-chat";
+
 
 // Set your model's context window size (tokens)
 const CONTEXT_WINDOW_TOKENS = 4096; // Adjust for your model (e.g., 8192 for Gemini Pro)

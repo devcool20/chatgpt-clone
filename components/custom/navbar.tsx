@@ -1,10 +1,11 @@
 'use client';
 
+import { UserButton, SignInButton, useUser } from '@clerk/nextjs';
 import Image from "next/image";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 
-import { UserButton, SignInButton, useUser } from '@clerk/nextjs';
-
+import { History, useSidebar } from "./history";
 import { SlashIcon, MoreHorizontalIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
@@ -14,8 +15,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { History, useSidebar } from "./history";
-import { useParams, useRouter } from "next/navigation";
 
 export const Navbar = () => {
   const { user, isSignedIn } = useUser();

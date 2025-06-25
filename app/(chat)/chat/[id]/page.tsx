@@ -1,6 +1,7 @@
 'use client';
 import { useUser, SignInButton } from '@clerk/nextjs';
 import { useParams } from 'next/navigation';
+
 import { Chat } from '@/components/custom/chat';
 
 export default function ChatDetailPage() {

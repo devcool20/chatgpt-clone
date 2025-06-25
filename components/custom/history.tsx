@@ -8,7 +8,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
-import { Button } from "../ui/button";
+
 import { generateUUID } from "@/lib/utils";
 
 // Remove db schema import as it's no longer needed
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,11 +63,11 @@ export const SidebarProvider = ({ children }: { children: React.ReactNode }) => 
 function SidebarItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <button
-      className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-800/50 transition w-full text-left text-sm"
+      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/50 transition w-full text-left text-sm"
       onClick={onClick}
       type="button"
     >
-      <div className="flex items-center justify-center w-4 h-4">
+      <div className="flex items-center justify-center size-4">
         {icon}
       </div>
       <span className="text-zinc-200">{label}</span>
@@ -218,7 +219,7 @@ export const History = ({ user }: { user: any }) => {
           </div>
           
           {/* Upgrade plan */}
-          <div className="px-4 py-4 border-t border-zinc-800 flex flex-col gap-2">
+          <div className="p-4 border-t border-zinc-800 flex flex-col gap-2">
             <button className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="7" y1="17" x2="17" y2="7"/>

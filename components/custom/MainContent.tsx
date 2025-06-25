@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+
 import { useSidebar } from "./history";
 
 export default function MainContent({ children }: { children: React.ReactNode }) {

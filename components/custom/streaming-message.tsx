@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 
 interface StreamingMessageProps {
   content: string | any;
@@ -123,7 +123,7 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
               <ul key={`bullet-list-${elements.length}`} className="mb-6 space-y-3 ml-0">
                 {listItems.map((item, index) => (
                   <li key={`bullet-item-${index}`} className="flex items-start">
-                    <span className="text-zinc-400 mr-3 mt-1 flex-shrink-0 text-sm">•</span>
+                    <span className="text-zinc-400 mr-3 mt-1 shrink-0 text-sm">•</span>
                     <div className="leading-7 text-white flex-1">{formatInlineText(item)}</div>
                   </li>
                 ))}
@@ -134,7 +134,7 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
               <ol key={`numbered-list-${elements.length}`} className="mb-6 space-y-3 ml-0">
                 {listItems.map((item, index) => (
                   <li key={`numbered-item-${index}`} className="flex items-start">
-                    <span className="text-zinc-400 mr-3 mt-1 flex-shrink-0 text-sm">{index + 1}.</span>
+                    <span className="text-zinc-400 mr-3 mt-1 shrink-0 text-sm">{index + 1}.</span>
                     <div className="leading-7 text-white flex-1">{formatInlineText(item)}</div>
                   </li>
                 ))}
