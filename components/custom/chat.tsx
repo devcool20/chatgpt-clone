@@ -50,6 +50,7 @@ export function Chat({
     isLoading,
     stop,
     reload,
+    setMessages,
   } = useChat({
     id,
     body: { id }, // Remove userId from body - let the API use Clerk's userId
@@ -181,34 +182,29 @@ export function Chat({
     setEditingId(null);
     setEditingValue("");
 
-    // Update the user message in-place
-    const updatedUserMsg = { ...currentMessages[idx], content: editedContent };
+    // Get messages up to the edit point (excluding the message being edited)
+    const messagesBeforeEdit = currentMessages.slice(0, idx);
 
-    // Remove the next AI message (if any)
-    let newMessages = [...currentMessages.slice(0, idx), updatedUserMsg];
-    if (currentMessages[idx + 1] && currentMessages[idx + 1].role === "assistant") {
-      // Remove the next AI message
-      newMessages = [...newMessages, ...currentMessages.slice(idx + 2)];
-    } else {
-      newMessages = [...newMessages, ...currentMessages.slice(idx + 1)];
-    }
+    // Update the local messages state first to remove the edited message and any following messages
+    setMessages(messagesBeforeEdit);
 
-    // Update the backend with the edited messages before reloading
+    // Update the backend with the trimmed messages
     try {
       await fetch(`/api/chat?id=${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: messagesBeforeEdit }),
       });
     } catch (err) {
-      // Optionally show a toast or error
+      console.error('Error updating chat:', err);
     }
 
-    // Log the messages being sent to reload
-    console.log('Calling reload with messages:', newMessages);
-
-    // Ensure reload uses the latest messages (microtask to guarantee state update)
-    Promise.resolve().then(() => reload());
+    // Append the edited content as a new user message, which will trigger AI response
+    append({
+      id: generateId(),
+      role: "user" as const,
+      content: editedContent,
+    });
   };
 
   const [showScrollDown, setShowScrollDown] = useState(false);
