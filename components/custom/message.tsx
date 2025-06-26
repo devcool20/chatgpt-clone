@@ -21,6 +21,8 @@ export const Message = ({
   toolInvocations: Array<ToolInvocation> | undefined;
   attachments?: Array<Attachment>;
 }) => {
+  console.log('Message component - role:', role, 'content:', content, 'type:', typeof content);
+
   return (
     <motion.div
       className={`flex flex-row gap-4 px-4 w-full md:w-[500px] md:px-0 first-of-type:pt-20`}
@@ -39,26 +41,27 @@ export const Message = ({
                 key={attachment.url} 
                 attachment={attachment}
                 onExplain={() => {
-                  // Handle explain action - you can customize this
                   console.log('Explain image:', attachment.url);
                 }}
               />
             ))}
           </div>
         )}
-        {content && typeof content === "string" && (
-          <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
+        
+        {/* Always show something - debug what we're getting */}
+        <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
+          {content && typeof content === "string" ? (
             <Markdown>{content}</Markdown>
-          </div>
-        )}
-
-        {content && typeof content === "object" && (
-          <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
+          ) : content && typeof content !== "string" ? (
             <pre className="whitespace-pre-wrap bg-zinc-100 dark:bg-zinc-800 p-4 rounded-lg overflow-x-auto">
               {JSON.stringify(content, null, 2)}
             </pre>
-          </div>
-        )}
+          ) : (
+            <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+              DEBUG: Content is {content === null ? 'null' : content === undefined ? 'undefined' : typeof content}: {String(content)}
+            </div>
+          )}
+        </div>
 
         {toolInvocations && (
           <div className="flex flex-col gap-4">

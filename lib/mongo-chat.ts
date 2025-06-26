@@ -25,15 +25,19 @@ interface DeleteChatParams {
 }
 
 export async function saveChat({ id, messages, userId }: SaveChatParams) {
+  console.log('saveChat called:', { id, userId, messagesCount: messages.length });
+  
   const client = await clientPromise;
   const db = client.db();
   const chats = db.collection("chats");
 
-  await chats.updateOne(
+  const result = await chats.updateOne(
     { id },
     { $set: { id, messages, userId, updatedAt: new Date() }, $setOnInsert: { createdAt: new Date() } },
     { upsert: true }
   );
+  
+  console.log('saveChat completed:', result.modifiedCount > 0 ? 'modified' : result.upsertedCount > 0 ? 'inserted' : 'no change');
 }
 
 export async function getChatById({ id }: GetChatParams) {
@@ -48,7 +52,11 @@ export async function getChatsByUserId({ id }: GetChatsByUserIdParams) {
   const client = await clientPromise;
   const db = client.db();
   const chats = db.collection("chats");
-  const result = await chats.find({ userId: id }).toArray();
+  
+  // If no id provided, return all chats (for debugging)
+  const query = id ? { userId: id } : {};
+  
+  const result = await chats.find(query).toArray();
   return result;
 }
 

@@ -35,10 +35,68 @@ function trimMessagesToContext(messages: CoreMessage[], maxTokens: number) {
   return trimmed;
 }
 
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return new Response("Chat ID is required", { status: 400 });
+  }
+
+  const { userId } = getAuth(request);
+
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  try {
+    console.log('=== CHAT API GET DEBUG ===');
+    console.log('Fetching chat with ID:', id, 'for user:', userId);
+    
+    const chat = await getChatById({ id });
+    console.log('Raw chat from DB:', JSON.stringify(chat, null, 2));
+
+    if (!chat) {
+      console.log('Chat not found in database');
+      return new Response("Chat not found", { status: 404 });
+    }
+
+    if (chat.userId !== userId) {
+      console.log('User ID mismatch. Chat userId:', chat.userId, 'Request userId:', userId);
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const messages = chat.messages || [];
+    console.log('Messages to return:', JSON.stringify(messages, null, 2));
+    console.log('Message count:', messages.length);
+    
+    // Log each message content type
+    messages.forEach((msg: any, index: number) => {
+      console.log(`Message ${index} content type:`, typeof msg.content, 'content:', msg.content);
+    });
+
+    const response = { 
+      id: chat.id,
+      messages: messages,
+      userId: chat.userId
+    };
+    
+    console.log('Final API response:', JSON.stringify(response, null, 2));
+    console.log('=== END CHAT API GET DEBUG ===');
+    
+    return Response.json(response);
+  } catch (error) {
+    console.error("Error fetching chat:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : 'No stack');
+    return new Response("An error occurred while fetching the chat", {
+      status: 500,
+    });
+  }
+}
+
 export async function POST(request: NextRequest) {
-  const { id, messages, userId: clientUserId }: { id: string; messages: Array<Message>; userId?: string } = await request.json();
-  const { userId: clerkUserId } = getAuth(request);
-  const userId = clientUserId || clerkUserId;
+  const { id, messages }: { id: string; messages: Array<Message> } = await request.json();
+  const { userId } = getAuth(request);
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -68,14 +126,27 @@ export async function POST(request: NextRequest) {
     onFinish: async ({ responseMessages }) => {
       if (userId) {
         try {
+          // Use the original messages format instead of trimmed core messages
+          // Append the new AI response messages to the original messages
+          const newAIMessages = responseMessages.map(msg => ({
+            id: msg.id || `msg-${Date.now()}`,
+            role: msg.role,
+            content: msg.content,
+          }));
+          
+          const allMessages = [...messages, ...newAIMessages];
+          console.log('Saving chat with ID:', id, 'userId:', userId, 'messages count:', allMessages.length);
           await saveChat({
             id,
-            messages: [...trimmedMessages, ...responseMessages],
+            messages: allMessages,
             userId,
           });
+          console.log('Chat saved successfully');
         } catch (error) {
-          console.error("Failed to save chat");
+          console.error("Failed to save chat:", error);
         }
+      } else {
+        console.log('No userId available for saving chat');
       }
     },
     experimental_telemetry: {

@@ -9,12 +9,34 @@ interface StreamingMessageProps {
   onContentChange?: (content: string) => void;
   stopAnimation?: boolean;
   instantStop?: boolean;
+  style?: React.CSSProperties;
 }
 
-export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAnimation, instantStop }: StreamingMessageProps) => {
-  // Ensure content is always a string
-  const safeContent = typeof content === 'string' ? content : JSON.stringify(content);
+export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAnimation, instantStop, style }: StreamingMessageProps) => {
+  // Simple content conversion - just convert to string
+  const safeContent = (() => {
+    console.log('StreamingMessage input:', content, typeof content);
+    
+    if (typeof content === 'string') {
+      return content;
+    } else if (Array.isArray(content)) {
+      // Extract text from array
+      const textParts = content
+        .filter(item => item && (item.type === 'text' || typeof item === 'string'))
+        .map(item => {
+          if (typeof item === 'string') return item;
+          return item.text || item.value || String(item);
+        });
+      return textParts.join(' ');
+    } else if (content && typeof content === 'object') {
+      return content.text || content.value || JSON.stringify(content);
+    } else {
+      return String(content || '');
+    }
+  })();
   
+  console.log('StreamingMessage output:', safeContent);
+
   const [displayed, setDisplayed] = useState("");
   const bufferRef = useRef(safeContent);
   const displayedRef = useRef("");
@@ -75,9 +97,11 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
     if (animationTimeout.current) clearTimeout(animationTimeout.current);
   }, []);
 
-  // Format text with better structure like ChatGPT
+  // Simple text formatting
   const formatText = (text: string) => {
-    if (!text || typeof text !== 'string') return <span className="text-white">No content</span>;
+    if (!text || typeof text !== 'string') {
+      return <span className="text-white">{String(text || '')}</span>;
+    }
 
     // Split text into paragraphs first (double line breaks)
     const sections = text.split(/\n\s*\n/);
@@ -198,7 +222,9 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
   };
 
   const formatInlineText = (text: string) => {
-    if (!text || typeof text !== 'string') return <span className="text-white">No content</span>;
+    if (!text || typeof text !== 'string') {
+      return <span className="text-white">{String(text || '')}</span>;
+    }
     
     // Handle bold text (**text**)
     const boldRegex = /\*\*(.+?)\*\*/g;
@@ -214,8 +240,29 @@ export const StreamingMessage = ({ content, isStreaming, onContentChange, stopAn
   };
 
   return (
-    <div className="font-sans text-base text-white leading-7 break-words w-full overflow-x-hidden">
-      {formatText(displayed)}
+    <div
+      className="font-sans text-base leading-7 break-words w-full overflow-x-hidden"
+      style={{
+        color: '#fff',
+        background: 'none',
+        fontSize: '1.125rem',
+        fontWeight: 300,
+        opacity: 1,
+        zIndex: 10,
+        position: 'relative',
+        padding: '0',
+        borderRadius: '0',
+        minHeight: '1.5em',
+        width: '100%',
+        marginBottom: '0',
+        marginLeft: '0',
+        boxShadow: 'none',
+        wordBreak: 'break-word',
+        textAlign: 'left',
+        ...((style && style) || {})
+      }}
+    >
+      {formatText(displayed || safeContent)}
       {(isStreaming || animatingRef.current) && !(stopAnimation || instantStop) && displayed !== safeContent && (
         <motion.span
           className="inline-block w-0.5 h-5 bg-white ml-0.5"

@@ -26,6 +26,8 @@ export function Chat({
   initialMessages: Array<Message>;
   isSignedIn?: boolean;
 }) {
+  console.log('Chat component - id:', id, 'initialMessages:', initialMessages, 'isSignedIn:', isSignedIn);
+  
   const { isOpen: sidebarOpen } = useSidebar();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -33,14 +35,12 @@ export function Chat({
   const [lastContentLength, setLastContentLength] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
-  const [localMessages, setLocalMessages] = useState<Message[]>(initialMessages);
   const [forceStop, setForceStop] = useState(false);
   const [stoppedMessageId, setStoppedMessageId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
-  const [userId, setUserId] = useState<string | null>(null);
-  
+
   const {
     messages,
     input,
@@ -52,22 +52,19 @@ export function Chat({
     reload,
   } = useChat({
     id,
-    body: { id, userId },
+    body: { id }, // Remove userId from body - let the API use Clerk's userId
     initialMessages,
     maxSteps: 10,
     onFinish: () => {
       window.history.replaceState({}, "", `/chat/${id}`);
+      
+      // Trigger history refresh after chat completion
+      setTimeout(() => {
+        console.log('Triggering chat history refresh after completion');
+        window.dispatchEvent(new Event('chat-history-updated'));
+      }, 1000); // Small delay to ensure save is complete
     },
   });
-
-  useEffect(() => {
-    let storedId = localStorage.getItem('mem0_user_id');
-    if (!storedId) {
-      storedId = uuidv4();
-      localStorage.setItem('mem0_user_id', storedId);
-    }
-    setUserId(storedId);
-  }, []);
 
   // Track streaming state by monitoring content changes
   useEffect(() => {
@@ -133,24 +130,8 @@ export function Chat({
     setAttachments([]); // Clear attachments after sending
     setTimeout(scrollToBottom, 0); // Scroll after DOM update
 
-    // Save chat to DB after sending a message - wait for messages to update
-    setTimeout(async () => {
-      try {
-        console.log('Saving chat to database with messages:', [...messages, userMessage]);
-        await fetch(`/api/chat?id=${encodeURIComponent(id)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: [...messages, userMessage] }),
-        });
-        console.log('Chat saved successfully, triggering history update');
-        // Trigger sidebar refresh via custom event with a small delay
-        setTimeout(() => {
-          window.dispatchEvent(new Event('chat-history-updated'));
-        }, 100);
-      } catch (err) {
-        console.error('Failed to save chat after sending message', err);
-      }
-    }, 500); // Wait 500ms for messages to update
+    // Note: Chat saving is handled automatically by the POST handler's onFinish callback
+    // This ensures the chat is saved with both user message and AI response
   };
 
   // Auto-scroll during streaming - more aggressive for first message
@@ -189,8 +170,9 @@ export function Chat({
   };
 
   const handleEditSave = async (messageId: string) => {
+    const currentMessages = messages.length > 0 ? messages : initialMessages;
     // Find the index of the message to edit
-    const idx = localMessages.findIndex((m) => m.id === messageId);
+    const idx = currentMessages.findIndex((m) => m.id === messageId);
     if (idx === -1) return;
 
     const editedContent = editingValue.trim();
@@ -200,15 +182,15 @@ export function Chat({
     setEditingValue("");
 
     // Update the user message in-place
-    const updatedUserMsg = { ...localMessages[idx], content: editedContent };
+    const updatedUserMsg = { ...currentMessages[idx], content: editedContent };
 
     // Remove the next AI message (if any)
-    let newMessages = [...localMessages.slice(0, idx), updatedUserMsg];
-    if (localMessages[idx + 1] && localMessages[idx + 1].role === "assistant") {
+    let newMessages = [...currentMessages.slice(0, idx), updatedUserMsg];
+    if (currentMessages[idx + 1] && currentMessages[idx + 1].role === "assistant") {
       // Remove the next AI message
-      newMessages = [...newMessages, ...localMessages.slice(idx + 2)];
+      newMessages = [...newMessages, ...currentMessages.slice(idx + 2)];
     } else {
-      newMessages = [...newMessages, ...localMessages.slice(idx + 1)];
+      newMessages = [...newMessages, ...currentMessages.slice(idx + 1)];
     }
 
     // Update the backend with the edited messages before reloading
@@ -222,9 +204,6 @@ export function Chat({
       // Optionally show a toast or error
     }
 
-    // Update local state immediately
-    setLocalMessages(newMessages);
-
     // Log the messages being sent to reload
     console.log('Calling reload with messages:', newMessages);
 
@@ -232,10 +211,7 @@ export function Chat({
     Promise.resolve().then(() => reload());
   };
 
-  // Sync localMessages with messages from useChat
-  useEffect(() => {
-    setLocalMessages(messages);
-  }, [messages]);
+
 
   const [showScrollDown, setShowScrollDown] = useState(false);
 
@@ -291,7 +267,7 @@ export function Chat({
       }
       window.removeEventListener('resize', checkScrollState);
     };
-  }, [messages, localMessages, isLoading]);
+  }, [messages, isLoading]);
 
   // Suggestions for new chat (randomized once per mount)
   const allSuggestions = [
@@ -418,7 +394,11 @@ export function Chat({
         disabled={!isSignedIn}
         accept="image/*,.pdf,.doc,.docx,.txt"
       />
-      {messages.length === 0 ? (
+      {(() => {
+        const shouldShowEmpty = messages.length === 0 && initialMessages.length === 0;
+        console.log('Chat component - shouldShowEmpty:', shouldShowEmpty, 'messages.length:', messages.length, 'initialMessages.length:', initialMessages.length);
+        return shouldShowEmpty;
+      })() ? (
         <div className="flex flex-1 flex-col items-center justify-center min-h-screen w-full">
           <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto">
             <div className="flex flex-row justify-center gap-3 mb-2">
@@ -439,110 +419,110 @@ export function Chat({
               onSubmit={handleSubmitAndScroll}
               style={{ boxShadow: "0 4px 32px 0 rgba(0,0,0,0.25), 0 1.5px 6px 0 rgba(0,0,0,0.10)" }}
             >
-              {(attachments.length > 0 || uploadQueue.length > 0) && (
+            {(attachments.length > 0 || uploadQueue.length > 0) && (
                 <div className="flex flex-row flex-wrap gap-3 pb-2 w-full">
-                  {attachments.map((attachment, index) => (
-                    <div key={attachment.url || attachment.name} className="flex flex-col items-center max-w-24 relative group">
-                      {attachment.contentType && attachment.contentType.startsWith("image") ? (
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name ?? "Image attachment"}
-                          className="rounded-md object-cover border border-gray-300 dark:border-gray-700"
-                          style={{ width: 64, height: 64 }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                          <span className="text-2xl">📄</span>
-                        </div>
-                      )}
-                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center" title={attachment.name}>
-                        {attachment.name}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setAttachments(prev => prev.filter((_, i) => i !== index));
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        title="Remove attachment"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  {uploadQueue.map((filename, index) => (
-                    <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
+                {attachments.map((attachment, index) => (
+                  <div key={attachment.url || attachment.name} className="flex flex-col items-center max-w-24 relative group">
+                    {attachment.contentType && attachment.contentType.startsWith("image") ? (
+                      <img
+                        src={attachment.url}
+                        alt={attachment.name ?? "Image attachment"}
+                        className="rounded-md object-cover border border-gray-300 dark:border-gray-700"
+                        style={{ width: 64, height: 64 }}
+                      />
+                    ) : (
                       <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                        <div className="animate-spin text-zinc-500">⏳</div>
+                        <span className="text-2xl">📄</span>
                       </div>
-                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
+                    )}
+                    <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center" title={attachment.name}>
+                      {attachment.name}
                     </div>
-                  ))}
-                </div>
-              )}
+                    <button
+                      onClick={() => {
+                        setAttachments(prev => prev.filter((_, i) => i !== index));
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      title="Remove attachment"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {uploadQueue.map((filename, index) => (
+                  <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
+                    <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                      <div className="animate-spin text-zinc-500">⏳</div>
+                    </div>
+                    <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
+                  </div>
+                ))}
+              </div>
+            )}
               <div className="w-full flex items-center gap-2">
-                <Input
-                  className="flex-1 bg-[#2f2f2f] border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 text-zinc-100 placeholder:text-gray-400 text-base px-0"
-                  style={{ boxShadow: 'none', border: 'none', outline: 'none' }}
-                  placeholder="Ask anything"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmitAndScroll();
-                    }
+              <Input
+                className="flex-1 bg-[#2f2f2f] border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 text-zinc-100 placeholder:text-gray-400 text-base px-0"
+                style={{ boxShadow: 'none', border: 'none', outline: 'none' }}
+                placeholder="Ask anything"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmitAndScroll();
+                  }
+                }}
+                disabled={!isSignedIn}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                variant="ghost"
+                className="text-gray-400 hover:text-zinc-100"
+                disabled={!input.trim() || !isSignedIn || isCurrentlyStreaming}
+                aria-label="Send"
+                style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
+              >
+                <SendHorizonal className="size-5" />
+              </Button>
+              {isCurrentlyStreaming && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="text-zinc-400 hover:text-zinc-100"
+                  onClick={() => { 
+                    console.log('Stop button clicked! (suggestions area)', { isCurrentlyStreaming, isLoading });
+                    setForceStop(true); 
+                    setStoppedMessageId(messages[messages.length - 1]?.id || null); 
+                    stop(); 
                   }}
-                  disabled={!isSignedIn}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  variant="ghost"
-                  className="text-gray-400 hover:text-zinc-100"
-                  disabled={!input.trim() || !isSignedIn || isCurrentlyStreaming}
-                  aria-label="Send"
-                  style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
+                  aria-label="Stop"
                 >
-                  <SendHorizonal className="size-5" />
+                  <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
                 </Button>
-                {isCurrentlyStreaming && (
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="text-zinc-400 hover:text-zinc-100"
-                    onClick={() => { 
-                      console.log('Stop button clicked! (suggestions area)', { isCurrentlyStreaming, isLoading });
-                      setForceStop(true); 
-                      setStoppedMessageId(messages[messages.length - 1]?.id || null); 
-                      stop(); 
-                    }}
-                    aria-label="Stop"
-                  >
-                    <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="text-gray-400 hover:text-zinc-100"
-                  aria-label="Upload File"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!isSignedIn}
-                >
-                  <PaperclipIcon />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="text-gray-400 hover:text-zinc-100"
-                  aria-label="Mic"
-                  tabIndex={-1}
-                >
-                  <Mic className="size-5" />
-                </Button>
+              )}
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="text-gray-400 hover:text-zinc-100"
+                aria-label="Upload File"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!isSignedIn}
+              >
+                <PaperclipIcon />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="text-gray-400 hover:text-zinc-100"
+                aria-label="Mic"
+                tabIndex={-1}
+              >
+                <Mic className="size-5" />
+              </Button>
               </div>
             </form>
           </div>
@@ -556,7 +536,13 @@ export function Chat({
             style={{ scrollBehavior: "smooth" }}
           >
             <div className="mx-auto w-full max-w-[900px] flex flex-col gap-8 overflow-x-hidden px-4 pr-12">
-              {localMessages.map((msg, i) => (
+              {(() => {
+                const displayMessages = messages.length > 0 ? messages : initialMessages;
+                console.log('Chat component - rendering messages, displayMessages:', displayMessages);
+                console.log('Chat component - displayMessages length:', displayMessages.length);
+                return null;
+              })()}
+              {(messages.length > 0 ? messages : initialMessages).map((msg, i) => (
                 <div
                   key={msg.id || `msg-${i}`}
                   className={`flex w-full overflow-x-hidden ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -599,13 +585,38 @@ export function Chat({
                           />
                         ) : (
                           <span className="break-words w-full overflow-x-hidden">
-                            {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+                            {(() => {
+                              if (typeof msg.content === 'string') {
+                                return msg.content;
+                              } else if (Array.isArray(msg.content)) {
+                                return msg.content
+                                  .filter((item: any) => item.type === 'text')
+                                  .map((item: any) => item.text)
+                                  .join('');
+                              } else {
+                                return JSON.stringify(msg.content);
+                              }
+                            })()}
                           </span>
                         )}
                       </div>
                       <div className="flex flex-row gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleCopy(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
+                          onClick={() => {
+                            const textToCopy = (() => {
+                              if (typeof msg.content === 'string') {
+                                return msg.content;
+                              } else if (Array.isArray(msg.content)) {
+                                return msg.content
+                                  .filter((item: any) => item.type === 'text')
+                                  .map((item: any) => item.text)
+                                  .join('');
+                              } else {
+                                return JSON.stringify(msg.content);
+                              }
+                            })();
+                            handleCopy(textToCopy);
+                          }}
                           className="p-1 rounded hover:bg-zinc-800 transition text-xs"
                           title="Copy"
                           style={{ minWidth: 24, minHeight: 24 }}
@@ -613,7 +624,21 @@ export function Chat({
                           <span className="size-4 inline-flex items-center justify-center"><ClipboardIcon /></span>
                         </button>
                         <button
-                          onClick={() => editingId === msg.id ? handleEditSave(msg.id) : handleEdit(msg.id, typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
+                          onClick={() => {
+                            const textToEdit = (() => {
+                              if (typeof msg.content === 'string') {
+                                return msg.content;
+                              } else if (Array.isArray(msg.content)) {
+                                return msg.content
+                                  .filter((item: any) => item.type === 'text')
+                                  .map((item: any) => item.text)
+                                  .join('');
+                              } else {
+                                return JSON.stringify(msg.content);
+                              }
+                            })();
+                            editingId === msg.id ? handleEditSave(msg.id) : handleEdit(msg.id, textToEdit);
+                          }}
                           className="p-1 rounded hover:bg-zinc-800 transition text-xs"
                           title="Edit"
                           style={{ minWidth: 24, minHeight: 24 }}
@@ -625,33 +650,59 @@ export function Chat({
                   ) : (
                     <div className="flex flex-col items-start w-full group">
                       <div className="py-3 px-0 break-words font-sans text-base text-white leading-relaxed overflow-x-hidden text-left" style={{background: 'none', boxShadow: 'none'}}>
-                        {typeof msg.content === 'string' && msg.content.trim() ? (
-                          <StreamingMessage
-                            content={msg.content}
-                            isStreaming={isMessageStreaming(msg.id) && !forceStop && stoppedMessageId !== msg.id}
-                            onContentChange={handleContentChange}
-                            stopAnimation={forceStop || stoppedMessageId === msg.id}
-                            instantStop={forceStop || stoppedMessageId === msg.id}
-                          />
-                        ) : typeof msg.content === 'object' ? (
-                          <div className="text-white">
-                            <div className="text-sm text-zinc-400 mb-2">Object content detected:</div>
-                            <pre className="whitespace-pre-wrap bg-zinc-800 p-4 rounded-lg overflow-x-auto text-sm">
-                              {JSON.stringify(msg.content, null, 2)}
-                            </pre>
-                          </div>
-                        ) : msg.content ? (
-                          <div className="text-white">
-                            <div className="text-sm text-zinc-400 mb-2">Unexpected content type: {typeof msg.content}</div>
-                            <pre className="whitespace-pre-wrap bg-zinc-800 p-4 rounded-lg overflow-x-auto text-sm">
-                              {String(msg.content)}
-                            </pre>
-                          </div>
-                        ) : null}
+                        {(() => {
+                          // Robust extraction for all formats
+                          let textContent = '';
+                          if (typeof msg.content === 'string') {
+                            textContent = msg.content;
+                          } else if (Array.isArray(msg.content)) {
+                            textContent = msg.content
+                              .map((item: any) => {
+                                if (typeof item === 'string') return item;
+                                if (item && typeof item === 'object') {
+                                  if (typeof item.text === 'string') return item.text;
+                                  if (typeof item.value === 'string') return item.value;
+                                }
+                                return '';
+                              })
+                              .join('');
+                          } else if (msg.content && typeof msg.content === 'object') {
+                            if (typeof msg.content.text === 'string') textContent = msg.content.text;
+                            else if (typeof msg.content.value === 'string') textContent = msg.content.value;
+                            else textContent = JSON.stringify(msg.content);
+                          } else {
+                            textContent = String(msg.content ?? '');
+                          }
+
+                          // Always show something
+                          return (
+                            <StreamingMessage
+                              content={textContent}
+                              isStreaming={isMessageStreaming(msg.id) && !forceStop && stoppedMessageId !== msg.id}
+                              onContentChange={handleContentChange}
+                              stopAnimation={forceStop || stoppedMessageId === msg.id}
+                              instantStop={forceStop || stoppedMessageId === msg.id}
+                            />
+                          );
+                        })()}
                       </div>
                       <div className="flex flex-row gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleCopy(typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
+                          onClick={() => {
+                            const textToCopy = (() => {
+                              if (typeof msg.content === 'string') {
+                                return msg.content;
+                              } else if (Array.isArray(msg.content)) {
+                                return msg.content
+                                  .filter((item: any) => item.type === 'text')
+                                  .map((item: any) => item.text)
+                                  .join('');
+                              } else {
+                                return JSON.stringify(msg.content);
+                              }
+                            })();
+                            handleCopy(textToCopy);
+                          }}
                           className="p-1 rounded hover:bg-zinc-800 transition text-xs"
                           title="Copy"
                           style={{ minWidth: 24, minHeight: 24 }}

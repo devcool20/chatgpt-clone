@@ -8,6 +8,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import Image from "next/image";
 
 import { generateUUID } from "@/lib/utils";
 
@@ -81,7 +82,10 @@ export const History = () => {
   const pathname = usePathname();
   const { isOpen, setIsOpen } = useSidebar();
   const router = useRouter();
+  
+
   const { data: history, isLoading, mutate } = useSWR(isSignedIn ? "/api/history" : null, async (url) => {
+    console.log('=== FRONTEND HISTORY DEBUG ===');
     console.log('Fetching chat history from:', url);
     const res = await fetch(url);
     if (!res.ok) {
@@ -89,7 +93,9 @@ export const History = () => {
       throw new Error("Failed to fetch");
     }
     const data = await res.json();
-    console.log('Chat history retrieved:', data);
+    console.log('Chat history response:', JSON.stringify(data, null, 2));
+    console.log('History array length:', Array.isArray(data) ? data.length : 'Not an array');
+    console.log('=== END FRONTEND HISTORY DEBUG ===');
     return data;
   }, { 
     fallbackData: [],
@@ -113,7 +119,27 @@ export const History = () => {
   // Handler for new chat
   const handleNewChat = async () => {
     const newId = generateUUID();
-    // Only navigate to the new chat page; do not create the chat in the DB yet
+    
+    // Save current chat to database before navigating (only if it has messages)
+    if (id && typeof id === 'string') {
+      try {
+        // Check if current chat has any messages by fetching it
+        const response = await fetch(`/api/chat?id=${encodeURIComponent(id)}`);
+        if (response.ok) {
+          const currentChat = await response.json();
+          // Only save if the chat has actual messages
+          if (currentChat.messages && currentChat.messages.length > 0) {
+            console.log('Current chat has messages, preserving it');
+          } else {
+            console.log('Current chat has no messages, not saving empty chat');
+          }
+        }
+      } catch (err) {
+        console.log('Current chat does not exist yet or failed to fetch:', err);
+      }
+    }
+    
+    // Navigate to the new chat page
     router.push(`/chat/${newId}`);
     // No mutate here; chat will be saved after first message is sent
   };
@@ -143,7 +169,7 @@ export const History = () => {
       {!isOpen && (
         <div className="fixed left-0 top-0 h-full w-16 bg-zinc-900 flex flex-col items-center py-4 z-40 border-r border-zinc-800">
           <Button variant="ghost" className="mb-4" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
-            <MenuIcon />
+            <Image src="/favicon.ico" alt="ChatGPT Icon" width={28} height={28} className="mx-auto" />
           </Button>
           <div className="flex flex-col gap-4 items-center mt-2">
             {sidebarIcons.map((item, index) => (
@@ -180,25 +206,77 @@ export const History = () => {
             <div className="text-xs text-zinc-400 px-2 pt-2 pb-1">Chats</div>
             {!user && <div className="text-zinc-500 text-sm">Login to see your chats.</div>}
             {user && isLoading && <div className="text-zinc-500 text-sm">Loading...</div>}
-            {user && !isLoading && history.length === 0 && <div className="text-zinc-500 text-sm">No chats found.</div>}
-            {user && history.length > 0 && (
+            {user && !isLoading && (!history || !Array.isArray(history) || history.length === 0) && (
+              <div className="text-zinc-500 text-sm">
+                No chats found.
+                <br />
+                <span className="text-xs">Debug: {history ? `Got ${Array.isArray(history) ? history.length : 'non-array'} items` : 'null/undefined'}</span>
+                <br />
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/test-db');
+                      const data = await res.json();
+                      console.log('DB Debug:', data);
+                      alert(`DB Debug: User=${data.userId}, UserChats=${data.userChatCount}, Total=${data.totalChatsInDB}`);
+                    } catch (err) {
+                      console.error('Debug error:', err);
+                    }
+                  }}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline mt-2"
+                >
+                  Debug DB
+                </button>
+              </div>
+            )}
+            {user && !isLoading && history && Array.isArray(history) && history.length > 0 && (
               <ul className="flex flex-col gap-1">
                 {history.map((chat: any, index: number) => {
-                  // Defensive: ensure id and preview are strings
-                  const safeId = typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id);
-                  if (!safeId || safeId === 'null' || safeId === 'undefined' || safeId === '""') return null; // Skip invalid chats
-                  let safePreview = '';
-                  if (typeof chat.preview === 'string') {
-                    safePreview = chat.preview;
-                  } else if (Array.isArray(chat.preview)) {
-                    // If preview is an array of {type, text}
-                    safePreview = chat.preview.map(
-                      (part: any) => (typeof part === 'object' && part.text ? part.text : String(part))
-                    ).join(' ');
-                  } else if (typeof chat.preview === 'object' && chat.preview !== null && chat.preview.text) {
-                    safePreview = chat.preview.text;
-                  } else {
-                    safePreview = JSON.stringify(chat.preview);
+                  console.log(`Rendering chat ${index}:`, chat);
+                  
+                  // Ultra-defensive ID handling
+                  let safeId = '';
+                  try {
+                    if (chat && chat.id) {
+                      safeId = String(chat.id);
+                    } else {
+                      console.warn(`Chat ${index} has no valid ID:`, chat);
+                      return null;
+                    }
+                  } catch (error) {
+                    console.error(`Error processing chat ${index} ID:`, error);
+                    return null;
+                  }
+                  
+                  // Skip if ID is empty or invalid
+                  if (!safeId || safeId === 'null' || safeId === 'undefined' || safeId === '""') {
+                    console.warn(`Skipping chat ${index} with invalid ID:`, safeId);
+                    return null;
+                  }
+                  
+                  // Ultra-defensive preview handling - always show SOMETHING
+                  let safePreview = 'No preview available';
+                  try {
+                    if (chat.preview) {
+                      if (typeof chat.preview === 'string') {
+                        safePreview = chat.preview;
+                      } else if (Array.isArray(chat.preview)) {
+                        safePreview = chat.preview.map((part: any) => String(part)).join(' ');
+                      } else {
+                        safePreview = String(chat.preview);
+                      }
+                    } else if (chat.raw) {
+                      // Fallback to raw data if preview is missing
+                      safePreview = `[Debug] ${String(chat.raw).substring(0, 50)}...`;
+                    }
+                  } catch (error) {
+                    console.error(`Error processing chat ${index} preview:`, error);
+                    safePreview = `[Error] Chat ID: ${safeId}`;
+                  }
+                  
+                  // Ensure preview is never empty
+                  if (!safePreview || safePreview.trim() === '') {
+                    safePreview = `Chat ${safeId}`;
                   }
 
                   // Delete handler
@@ -216,7 +294,10 @@ export const History = () => {
                     <li key={safeId || `chat-${index}`}
                         className="group flex items-center justify-between hover:bg-zinc-800 rounded transition px-3 py-2">
                       <Link href={`/chat/${safeId}`} className={`flex-1 min-w-0 ${safeId === id ? 'text-white' : 'text-zinc-300'}`}>
-                        <span className="truncate block text-sm">{safePreview || 'Untitled'}</span>
+                        <span className="truncate block text-sm" title={`ID: ${safeId}`}>
+                          {safePreview || `Chat ${safeId}` || 'Untitled Chat'}
+                        </span>
+                        <span className="text-xs text-zinc-500 block">ID: {safeId}</span>
                       </Link>
                       <button
                         onClick={handleDelete}
