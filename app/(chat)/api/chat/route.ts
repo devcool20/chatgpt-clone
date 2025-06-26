@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
         try {
           // Use the original messages format instead of trimmed core messages
           // Append the new AI response messages to the original messages
-          const newAIMessages = responseMessages.map(msg => ({
-            id: msg.id || `msg-${Date.now()}`,
+          const newAIMessages = responseMessages.map((msg, idx) => ({
+            id: 'id' in msg && msg.id ? msg.id : `msg-${Date.now()}-${idx}`,
             role: msg.role,
             content: msg.content,
           }));
