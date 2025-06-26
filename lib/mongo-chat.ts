@@ -48,11 +48,7 @@ export async function getChatsByUserId({ id }: GetChatsByUserIdParams) {
   const client = await clientPromise;
   const db = client.db();
   const chats = db.collection("chats");
-  
-  console.log('Querying database for user:', id);
   const result = await chats.find({ userId: id }).toArray();
-  console.log('Database query result:', result);
-  
   return result;
 }
 

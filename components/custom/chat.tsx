@@ -3,7 +3,7 @@
 import { Attachment, Message, generateId } from "ai";
 import { useChat } from "ai/react";
 import { ClipboardIcon , SendHorizonal, Mic , ArrowDown } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from 'uuid';
 
 import { useSidebar } from "@/components/custom/history";
@@ -293,11 +293,24 @@ export function Chat({
     };
   }, [messages, localMessages, isLoading]);
 
-  // Suggestions for new chat
-  const suggestions = [
+  // Suggestions for new chat (randomized once per mount)
+  const allSuggestions = [
     "What can you do?",
-    "Give me some creative ideas"
+    "Give me some creative ideas",
+    "Write a poem about the ocean",
+    "Summarize this article",
+    "Help me plan my day",
+    "Explain quantum computing simply",
+    "Suggest a movie to watch",
+    "How do I improve my productivity?",
+    "Tell me a joke",
+    "What's the weather like today?"
   ];
+  function getRandomSuggestions(arr: string[], n: number) {
+    const shuffled = arr.slice().sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, n);
+  }
+  const suggestions = useMemo(() => getRandomSuggestions(allSuggestions, 2), []);
 
   const handleSuggestionClick = (text: string) => {
     setInput(text);
@@ -407,7 +420,7 @@ export function Chat({
       />
       {messages.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center min-h-screen w-full">
-          <div className="flex flex-col items-center gap-6 w-full max-w-md">
+          <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto">
             <div className="flex flex-row justify-center gap-3 mb-2">
               {suggestions.map((s) => (
                 <button
