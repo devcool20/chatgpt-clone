@@ -1,6 +1,7 @@
 import { Attachment } from "ai";
 
 import { LoaderIcon } from "./icons";
+import { Button } from "../ui/button";
 
 // Icon components for different file types
 const FileIcon = () => (
@@ -55,10 +56,12 @@ export const PreviewAttachment = ({
   attachment,
   isUploading = false,
   onRemove,
+  onExplain,
 }: {
   attachment: Attachment;
   isUploading?: boolean;
   onRemove?: () => void;
+  onExplain?: () => void;
 }) => {
   const { name, url, contentType } = attachment;
   const fileIcon = contentType ? getFileIcon(contentType, name || "") : null;
@@ -97,6 +100,18 @@ export const PreviewAttachment = ({
           </button>
         )}
       </div>
+
+      {/* Explain button - only show for images */}
+      {contentType && contentType.startsWith("image") && onExplain && (
+        <Button
+          onClick={onExplain}
+          size="sm"
+          variant="outline"
+          className="text-xs px-2 py-1 h-auto"
+        >
+          explain
+        </Button>
+      )}
 
       <div className="text-xs text-zinc-500 max-w-20 truncate" title={name}>
         {name}

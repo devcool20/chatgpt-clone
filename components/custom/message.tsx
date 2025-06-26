@@ -35,7 +35,14 @@ export const Message = ({
         {attachments && attachments.length > 0 && (
           <div className="flex flex-col items-center justify-center w-full mb-2">
             {attachments.map((attachment) => (
-              <PreviewAttachment key={attachment.url} attachment={attachment} />
+              <PreviewAttachment 
+                key={attachment.url} 
+                attachment={attachment}
+                onExplain={() => {
+                  // Handle explain action - you can customize this
+                  console.log('Explain image:', attachment.url);
+                }}
+              />
             ))}
           </div>
         )}
