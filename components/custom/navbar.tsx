@@ -33,7 +33,7 @@ export const Navbar = () => {
     <>
       <div className="fixed top-0 left-0 w-full py-2 px-3 flex flex-row items-center z-50 bg-transparent">
         <div className="flex flex-row gap-3 items-center min-w-[72px]">
-          <History user={user} />
+          <History />
         </div>
         <div className={`text-lg font-semibold text-white tracking-tight select-none transition-all duration-300 ml-2 mr-4`}>ChatGPT</div>
         <div className="flex-1 flex justify-center">

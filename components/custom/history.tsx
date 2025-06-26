@@ -4,7 +4,7 @@ import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-// Remove next-auth import - using generic user type instead
+import { useUser } from '@clerk/nextjs';
 import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -75,12 +75,13 @@ function SidebarItem({ icon, label, onClick }: { icon: React.ReactNode; label: s
   );
 }
 
-export const History = ({ user }: { user: any }) => {
+export const History = () => {
+  const { user, isLoaded, isSignedIn } = useUser();
   const { id } = useParams();
   const pathname = usePathname();
   const { isOpen, setIsOpen } = useSidebar();
   const router = useRouter();
-  const { data: history, isLoading, mutate } = useSWR(user ? "/api/history" : null, async (url) => {
+  const { data: history, isLoading, mutate } = useSWR(isSignedIn ? "/api/history" : null, async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();

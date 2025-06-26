@@ -107,3 +107,4 @@ gemini-chatbot/
 - `public/fonts/` — Custom fonts
 - `tailwind.config.ts` — Tailwind CSS configuration
 
+By Divyanshu
