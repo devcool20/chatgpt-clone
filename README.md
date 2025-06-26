@@ -34,7 +34,7 @@ A modern, full-stack AI chatbot platform built with Next.js, Vercel AI SDK, Mem0
 ## 🗂️ Project Structure
 
 ```
-gemini-chatbot/
+chatgpt-clone/
 │
 ├── ai/                # AI logic, custom middleware, and provider setup
 ├── app/               # Next.js app directory (routes, pages, API)
