@@ -5,11 +5,14 @@ import { getChatsByUserId } from '@/lib/mongo-chat';
 
 export async function GET(request: NextRequest) {
   const { userId } = getAuth(request);
+  console.log('History API called with userId:', userId);
   if (!userId) {
+    console.log('No userId found, returning 401');
     return new Response('Unauthorized', { status: 401 });
   }
   try {
     const chats = await getChatsByUserId({ id: userId });
+    console.log('Chats retrieved from database:', chats);
     // Return only id and preview (first message) for each chat
     const history = chats.map(chat => ({
       id: chat.id,
@@ -18,8 +21,10 @@ export async function GET(request: NextRequest) {
     }));
     // Sort by updatedAt descending
     history.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    console.log('Processed history to return:', history);
     return Response.json(history);
   } catch (error) {
+    console.error('Error fetching chat history:', error);
     return new Response('Failed to fetch chat history', { status: 500 });
   }
 } 

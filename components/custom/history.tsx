@@ -82,16 +82,30 @@ export const History = () => {
   const { isOpen, setIsOpen } = useSidebar();
   const router = useRouter();
   const { data: history, isLoading, mutate } = useSWR(isSignedIn ? "/api/history" : null, async (url) => {
+    console.log('Fetching chat history from:', url);
     const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  }, { fallbackData: [] });
-
-  useEffect(() => { mutate(); }, [pathname, mutate]);
+    if (!res.ok) {
+      console.error('Failed to fetch history:', res.status, res.statusText);
+      throw new Error("Failed to fetch");
+    }
+    const data = await res.json();
+    console.log('Chat history retrieved:', data);
+    return data;
+  }, { 
+    fallbackData: [],
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 1000,
+    errorRetryCount: 3,
+    errorRetryInterval: 1000
+  });
 
   // Listen for chat-history-updated event to refresh chat history
   useEffect(() => {
-    const handler = () => mutate();
+    const handler = () => {
+      console.log('Chat history update event triggered');
+      mutate();
+    };
     window.addEventListener('chat-history-updated', handler);
     return () => window.removeEventListener('chat-history-updated', handler);
   }, [mutate]);
@@ -149,12 +163,16 @@ export const History = () => {
               <MenuIcon />
             </Button>
           </div>
-          <div className="px-3 mb-4">
+          <div className="px-3 mb-4 flex flex-col gap-1">
             <SidebarItem icon={
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            } label="Start a new chat" onClick={handleNewChat} />
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none"/><path d="M12 5v14M5 12h14"/></svg>
+            } label="New chat" onClick={handleNewChat} />
+            <SidebarItem icon={
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            } label="Search chats" onClick={() => {}} />
+            <SidebarItem icon={
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/></svg>
+            } label="Library" onClick={() => {}} />
           </div>
           
           {/* Chats section */}

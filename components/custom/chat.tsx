@@ -116,12 +116,14 @@ export function Chat({
     if (e) e.preventDefault();
     if (!input.trim() || !isSignedIn) return;
     
+    const userMessage = {
+      id: generateId(),
+      role: "user" as const,
+      content: input,
+    };
+    
     append(
-      {
-        id: generateId(),
-        role: "user",
-        content: input,
-      },
+      userMessage,
       {
         experimental_attachments: attachments,
       }
@@ -131,19 +133,24 @@ export function Chat({
     setAttachments([]); // Clear attachments after sending
     setTimeout(scrollToBottom, 0); // Scroll after DOM update
 
-    // Save chat to DB after sending a message
-    try {
-      await fetch(`/api/chat?id=${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { id: generateId(), role: "user", content: input }] }),
-      });
-      // Trigger sidebar refresh via custom event
-      window.dispatchEvent(new Event('chat-history-updated'));
-    } catch (err) {
-      // Optionally show a toast or error
-      console.error('Failed to save chat after sending message', err);
-    }
+    // Save chat to DB after sending a message - wait for messages to update
+    setTimeout(async () => {
+      try {
+        console.log('Saving chat to database with messages:', [...messages, userMessage]);
+        await fetch(`/api/chat?id=${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [...messages, userMessage] }),
+        });
+        console.log('Chat saved successfully, triggering history update');
+        // Trigger sidebar refresh via custom event with a small delay
+        setTimeout(() => {
+          window.dispatchEvent(new Event('chat-history-updated'));
+        }, 100);
+      } catch (err) {
+        console.error('Failed to save chat after sending message', err);
+      }
+    }, 500); // Wait 500ms for messages to update
   };
 
   // Auto-scroll during streaming - more aggressive for first message
