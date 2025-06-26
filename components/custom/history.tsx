@@ -1,10 +1,10 @@
 "use client";
 
+import { useUser } from '@clerk/nextjs';
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { useUser } from '@clerk/nextjs';
 import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
