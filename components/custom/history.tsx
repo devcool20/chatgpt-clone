@@ -166,24 +166,26 @@ export const History = () => {
   return (
     <>
       {/* Collapsed sidebar (icons only) */}
-      {!isOpen && ( <div className="fixed left-0 top-0 h-full w-16 bg-zinc-900 flex flex-col items-center py-4 z-40 border-r border-zinc-800">
-    <Button variant="ghost" className="mb-4" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
-      <Image src="/favicon.ico" alt="ChatGPT Icon" width={28} height={28} className="mx-auto" style={{ transform: 'translateY(-10px)' }} />
-    </Button>
-    <div className="flex flex-col gap-4 items-center mt-2 -translate-y-3">
-      {sidebarIcons.map((item, index) => (
-        <Link
-          href={item.href}
-          key={`sidebar-${item.label}-${index}`}
-          className="text-zinc-400 hover:text-white flex flex-col items-center"
-          title={item.label}
-        >
-          {item.icon}
-        </Link>
-      ))}
-    </div>
-  </div>
-)}
+      {!isOpen && (
+        <div className="fixed left-0 top-0 h-full w-16 flex flex-col items-center py-4 z-40 bg-transparent" style={{position: 'fixed'}}>
+          <div className="sidebar-blink-line"></div>
+          <Button variant="ghost" className="mb-4 hover:bg-transparent" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
+            <Image src="/favicon.ico" alt="ChatGPT Icon" width={28} height={28} className="mx-auto" style={{ transform: 'translateY(-10px)' }} />
+          </Button>
+          <div className="flex flex-col gap-4 items-center mt-2 -translate-y-3">
+            {sidebarIcons.map((item, index) => (
+              <Link
+                href={item.href}
+                key={`sidebar-${item.label}-${index}`}
+                className="text-zinc-400 hover:text-white flex flex-col items-center"
+                title={item.label}
+              >
+                {item.icon}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Open sidebar (full) */}
       {isOpen && (

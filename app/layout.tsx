@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { Toaster } from "sonner";
 
 import { SidebarProvider, useSidebar } from "@/components/custom/history";
+import { LoginModal } from "@/components/custom/login-modal";
 import MainContent from "@/components/custom/MainContent";
 import { Navbar } from "@/components/custom/navbar";
 import { ThemeProvider } from "@/components/custom/theme-provider";
@@ -32,6 +33,7 @@ export default async function RootLayout({
               disableTransitionOnChange
             >
               <Toaster position="top-center" />
+              <LoginModal />
               <Navbar />
               <MainContent>{children}</MainContent>
             </ThemeProvider>

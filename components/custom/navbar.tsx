@@ -1,6 +1,6 @@
 'use client';
 
-import { UserButton, SignInButton, useUser } from '@clerk/nextjs';
+import { UserButton, SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -35,14 +35,14 @@ export const Navbar = () => {
         <div className="flex flex-row gap-3 items-center min-w-[72px]">
           <History />
         </div>
-        <div className="flex flex-row items-center ml-0 mr-4">
+        <div className="flex flex-row items-center ml-0 mr-4 hover:bg-transparent">
           <div className={`text-[1.125rem] font-light text-white tracking-tight select-none transition-all duration-300`} style={{fontWeight: 300}}>ChatGPT</div>
           <svg className="ml-1" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 8L10 12L14 8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
         <div className="flex-1 flex justify-center">
-          <div className="text-zinc-300 text-base font-semibold select-none flex items-center gap-1" style={{fontWeight: 600}}>
+          <div className="text-zinc-300 text-base font-semibold select-none flex items-center gap-1 ml-[-56px]" style={{fontWeight: 600}}>
             Saved memory full
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="inline-block ml-1 text-zinc-400"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">i</text></svg>
           </div>
@@ -73,9 +73,34 @@ export const Navbar = () => {
           {isSignedIn ? (
             <UserButton afterSignOutUrl="/" />
           ) : (
-            <SignInButton mode="modal">
-              <Button className="py-1.5 px-2 h-fit font-normal text-white">Login</Button>
-            </SignInButton>
+            <div className="flex items-center gap-2">
+              <SignInButton mode="modal">
+                <Button 
+                  variant="ghost" 
+                  className="h-8 px-3 py-1 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-full border-0 transition-colors"
+                >
+                  Log in
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button 
+                  variant="ghost" 
+                  className="h-8 px-3 py-1 text-sm font-medium text-white bg-transparent rounded-full border border-white/20 hover:border-white/30 transition-colors"
+                >
+                  Sign up for free
+                </Button>
+              </SignUpButton>
+              <button 
+                className="flex items-center justify-center w-8 h-8 rounded-full border border-white/20 hover:border-white/30 hover:bg-white/10 transition-colors"
+                aria-label="Help"
+              >
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-white">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>
