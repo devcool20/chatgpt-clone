@@ -112,7 +112,7 @@ export function Chat({
   }, [messages, scrollToBottom]);
 
   // On user send, scroll to bottom immediately
-  const handleSubmitAndScroll = (e?: any) => {
+  const handleSubmitAndScroll = async (e?: any) => {
     if (e) e.preventDefault();
     if (!input.trim() || !isSignedIn) return;
     
@@ -130,6 +130,20 @@ export function Chat({
     setInput("");
     setAttachments([]); // Clear attachments after sending
     setTimeout(scrollToBottom, 0); // Scroll after DOM update
+
+    // Save chat to DB after sending a message
+    try {
+      await fetch(`/api/chat?id=${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [...messages, { id: generateId(), role: "user", content: input }] }),
+      });
+      // Trigger sidebar refresh via custom event
+      window.dispatchEvent(new Event('chat-history-updated'));
+    } catch (err) {
+      // Optionally show a toast or error
+      console.error('Failed to save chat after sending message', err);
+    }
   };
 
   // Auto-scroll during streaming - more aggressive for first message

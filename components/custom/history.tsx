@@ -88,6 +88,13 @@ export const History = ({ user }: { user: any }) => {
 
   useEffect(() => { mutate(); }, [pathname, mutate]);
 
+  // Listen for chat-history-updated event to refresh chat history
+  useEffect(() => {
+    const handler = () => mutate();
+    window.addEventListener('chat-history-updated', handler);
+    return () => window.removeEventListener('chat-history-updated', handler);
+  }, [mutate]);
+
   // Handler for new chat
   const handleNewChat = async () => {
     const newId = generateUUID();
