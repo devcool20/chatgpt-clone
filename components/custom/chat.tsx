@@ -434,115 +434,116 @@ export function Chat({
             </div>
             
             {/* File previews */}
-            {(attachments.length > 0 || uploadQueue.length > 0) && (
-              <div className="flex flex-row flex-wrap gap-3 pb-2 mb-4">
-                {attachments.map((attachment, index) => (
-                  <div key={attachment.url || attachment.name} className="flex flex-col items-center max-w-24 relative group">
-                    {attachment.contentType && attachment.contentType.startsWith("image") ? (
-                      <img
-                        src={attachment.url}
-                        alt={attachment.name ?? "Image attachment"}
-                        className="rounded-md object-cover border border-gray-300 dark:border-gray-700"
-                        style={{ width: 64, height: 64 }}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                        <span className="text-2xl">📄</span>
-                      </div>
-                    )}
-                    <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center" title={attachment.name}>
-                      {attachment.name}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setAttachments(prev => prev.filter((_, i) => i !== index));
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      title="Remove attachment"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                {uploadQueue.map((filename, index) => (
-                  <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
-                    <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                      <div className="animate-spin text-zinc-500">⏳</div>
-                    </div>
-                    <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-                          <form
-              className="w-full flex items-center gap-2 bg-[#2f2f2f] rounded-3xl px-6 py-4 shadow-xl pointer-events-auto"
+            <form
+              className="w-full flex flex-col items-start gap-2 bg-[#2f2f2f] rounded-3xl px-6 py-4 shadow-xl pointer-events-auto"
               onSubmit={handleSubmitAndScroll}
               style={{ boxShadow: "0 4px 32px 0 rgba(0,0,0,0.25), 0 1.5px 6px 0 rgba(0,0,0,0.10)" }}
             >
-              <Input
-                className="flex-1 bg-[#2f2f2f] border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 text-zinc-100 placeholder:text-gray-400 text-base px-0"
-                style={{ boxShadow: 'none', border: 'none', outline: 'none' }}
-                placeholder="Ask anything"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmitAndScroll();
-                  }
-                }}
-                disabled={!isSignedIn}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                variant="ghost"
-                className="text-gray-400 hover:text-zinc-100"
-                disabled={!input.trim() || !isSignedIn || isCurrentlyStreaming}
-                aria-label="Send"
-                style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
-              >
-                <SendHorizonal className="size-5" />
-              </Button>
-              {isCurrentlyStreaming && (
+              {(attachments.length > 0 || uploadQueue.length > 0) && (
+                <div className="flex flex-row flex-wrap gap-3 pb-2 w-full">
+                  {attachments.map((attachment, index) => (
+                    <div key={attachment.url || attachment.name} className="flex flex-col items-center max-w-24 relative group">
+                      {attachment.contentType && attachment.contentType.startsWith("image") ? (
+                        <img
+                          src={attachment.url}
+                          alt={attachment.name ?? "Image attachment"}
+                          className="rounded-md object-cover border border-gray-300 dark:border-gray-700"
+                          style={{ width: 64, height: 64 }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                          <span className="text-2xl">📄</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center" title={attachment.name}>
+                        {attachment.name}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setAttachments(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        title="Remove attachment"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {uploadQueue.map((filename, index) => (
+                    <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
+                      <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
+                        <div className="animate-spin text-zinc-500">⏳</div>
+                      </div>
+                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="w-full flex items-center gap-2">
+                <Input
+                  className="flex-1 bg-[#2f2f2f] border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 text-zinc-100 placeholder:text-gray-400 text-base px-0"
+                  style={{ boxShadow: 'none', border: 'none', outline: 'none' }}
+                  placeholder="Ask anything"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmitAndScroll();
+                    }
+                  }}
+                  disabled={!isSignedIn}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  variant="ghost"
+                  className="text-gray-400 hover:text-zinc-100"
+                  disabled={!input.trim() || !isSignedIn || isCurrentlyStreaming}
+                  aria-label="Send"
+                  style={{ display: isCurrentlyStreaming ? 'none' : undefined }}
+                >
+                  <SendHorizonal className="size-5" />
+                </Button>
+                {isCurrentlyStreaming && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="text-zinc-400 hover:text-zinc-100"
+                    onClick={() => { 
+                      console.log('Stop button clicked! (suggestions area)', { isCurrentlyStreaming, isLoading });
+                      setForceStop(true); 
+                      setStoppedMessageId(messages[messages.length - 1]?.id || null); 
+                      stop(); 
+                    }}
+                    aria-label="Stop"
+                  >
+                    <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="text-zinc-400 hover:text-zinc-100"
-                  onClick={() => { 
-                    console.log('Stop button clicked! (suggestions area)', { isCurrentlyStreaming, isLoading });
-                    setForceStop(true); 
-                    setStoppedMessageId(messages[messages.length - 1]?.id || null); 
-                    stop(); 
-                  }}
-                  aria-label="Stop"
+                  className="text-gray-400 hover:text-zinc-100"
+                  aria-label="Upload File"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!isSignedIn}
                 >
-                  <span className="size-5 inline-flex items-center justify-center">&#9632;</span>
+                  <PaperclipIcon />
                 </Button>
-              )}
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="text-gray-400 hover:text-zinc-100"
-                aria-label="Upload File"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!isSignedIn}
-              >
-                <PaperclipIcon />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="text-gray-400 hover:text-zinc-100"
-                aria-label="Mic"
-                tabIndex={-1}
-              >
-                <Mic className="size-5" />
-              </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="text-gray-400 hover:text-zinc-100"
+                  aria-label="Mic"
+                  tabIndex={-1}
+                >
+                  <Mic className="size-5" />
+                </Button>
+              </div>
             </form>
           </div>
         </div>
@@ -683,52 +684,6 @@ export function Chat({
           >
             <ArrowDown className="size-4" />
                       </button>
-            
-          {/* File previews - main chat area */}
-          {(attachments.length > 0 || uploadQueue.length > 0) && (
-            <div className="w-full fixed inset-x-0 bottom-24 z-10 flex justify-center pointer-events-none">
-              <div className="w-full max-w-3xl mx-auto mb-4 pointer-events-auto">
-                <div className="flex flex-row flex-wrap gap-3 pb-2 px-6">
-                  {attachments.map((attachment, index) => (
-                    <div key={attachment.url || attachment.name} className="flex flex-col items-center max-w-24 relative group">
-                      {attachment.contentType && attachment.contentType.startsWith("image") ? (
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name ?? "Image attachment"}
-                          className="rounded-md object-cover border border-gray-300 dark:border-gray-700"
-                          style={{ width: 64, height: 64 }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                          <span className="text-2xl">📄</span>
-                        </div>
-                      )}
-                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center" title={attachment.name}>
-                        {attachment.name}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setAttachments(prev => prev.filter((_, i) => i !== index));
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        title="Remove attachment"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  {uploadQueue.map((filename, index) => (
-                    <div key={`upload-${filename}-${index}`} className="flex flex-col items-center max-w-24">
-                      <div className="flex flex-col items-center justify-center size-16 bg-muted rounded-md border border-gray-300 dark:border-gray-700">
-                        <div className="animate-spin text-zinc-500">⏳</div>
-                      </div>
-                      <div className="text-xs text-zinc-500 max-w-20 truncate mt-1 text-center">{filename}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
             
           {/* Input bar */}
           <form

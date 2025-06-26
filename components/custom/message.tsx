@@ -32,6 +32,13 @@ export const Message = ({
       </div>
 
       <div className="flex flex-col gap-2 w-full">
+        {attachments && attachments.length > 0 && (
+          <div className="flex flex-col items-center justify-center w-full mb-2">
+            {attachments.map((attachment) => (
+              <PreviewAttachment key={attachment.url} attachment={attachment} />
+            ))}
+          </div>
+        )}
         {content && typeof content === "string" && (
           <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
             <Markdown>{content}</Markdown>
@@ -73,14 +80,6 @@ export const Message = ({
                 );
               }
             })}
-          </div>
-        )}
-
-        {attachments && (
-          <div className="flex flex-row gap-2">
-            {attachments.map((attachment) => (
-              <PreviewAttachment key={attachment.url} attachment={attachment} />
-            ))}
           </div>
         )}
       </div>
