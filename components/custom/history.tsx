@@ -3,12 +3,12 @@
 import { useUser } from '@clerk/nextjs';
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useContext, createContext } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
-import Image from "next/image";
 
 import { generateUUID } from "@/lib/utils";
 
@@ -166,20 +166,25 @@ export const History = () => {
   return (
     <>
       {/* Collapsed sidebar (icons only) */}
-      {!isOpen && (
-        <div className="fixed left-0 top-0 h-full w-16 bg-zinc-900 flex flex-col items-center py-4 z-40 border-r border-zinc-800">
-          <Button variant="ghost" className="mb-4" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
-            <Image src="/favicon.ico" alt="ChatGPT Icon" width={28} height={28} className="mx-auto" />
-          </Button>
-          <div className="flex flex-col gap-4 items-center mt-2">
-            {sidebarIcons.map((item, index) => (
-              <Link href={item.href} key={`sidebar-${item.label}-${index}`} className="text-zinc-400 hover:text-white flex flex-col items-center" title={item.label}>
-                {item.icon}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {!isOpen && ( <div className="fixed left-0 top-0 h-full w-16 bg-zinc-900 flex flex-col items-center py-4 z-40 border-r border-zinc-800">
+    <Button variant="ghost" className="mb-4" onClick={() => setIsOpen(true)} aria-label="Open sidebar">
+      <Image src="/favicon.ico" alt="ChatGPT Icon" width={28} height={28} className="mx-auto" style={{ transform: 'translateY(-10px)' }} />
+    </Button>
+    <div className="flex flex-col gap-4 items-center mt-2 -translate-y-3">
+      {sidebarIcons.map((item, index) => (
+        <Link
+          href={item.href}
+          key={`sidebar-${item.label}-${index}`}
+          className="text-zinc-400 hover:text-white flex flex-col items-center"
+          title={item.label}
+        >
+          {item.icon}
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
+
       {/* Open sidebar (full) */}
       {isOpen && (
         <div className="fixed left-0 top-0 h-full w-72 bg-zinc-900 flex flex-col py-4 z-40 border-r border-zinc-800 transition-all">
