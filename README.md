@@ -1,4 +1,4 @@
-A modern, full-stack AI chatbot platform built with Next.js, Vercel AI SDK, Mem0 for memory retention, MongoDB, Clerk authentication, and a beautiful, responsive UI powered by Tailwind CSS and Radix UI.
+A modern, full-stack AI chatbot platform built with Next.js, Vercel AI SDK, Mem0 for memory retention, MongoDB, Clerk authentication, and a beautiful, responsive UI powered by Tailwind CSS and Shadcn.
 
 ---
 
