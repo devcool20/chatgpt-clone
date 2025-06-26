@@ -98,14 +98,9 @@ export const History = ({ user }: { user: any }) => {
   // Handler for new chat
   const handleNewChat = async () => {
     const newId = generateUUID();
-    // Create the chat in the DB immediately
-    await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: newId, messages: [] }),
-    });
+    // Only navigate to the new chat page; do not create the chat in the DB yet
     router.push(`/chat/${newId}`);
-    mutate(); // Refresh sidebar
+    // No mutate here; chat will be saved after first message is sent
   };
 
   // Sidebar icons for collapsed state
@@ -172,6 +167,7 @@ export const History = ({ user }: { user: any }) => {
                 {history.map((chat: any, index: number) => {
                   // Defensive: ensure id and preview are strings
                   const safeId = typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id);
+                  if (!safeId || safeId === 'null' || safeId === 'undefined' || safeId === '""') return null; // Skip invalid chats
                   let safePreview = '';
                   if (typeof chat.preview === 'string') {
                     safePreview = chat.preview;
