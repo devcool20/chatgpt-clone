@@ -9,7 +9,7 @@ A modern, full-stack AI chatbot platform built with Next.js, Vercel AI SDK, Mem0
 - **Authentication**: Secure user management with Clerk.
 - **File Uploads**: Upload and preview files in chat.
 - **Chat History**: View and revisit previous conversations.
-- **Responsive UI**: Beautiful, accessible design with Tailwind CSS, Radix UI, and custom components.
+- **Responsive UI**: Beautiful, accessible design with Tailwind CSS, ShadCN, and custom components.
 - **MongoDB Storage**: Scalable, cloud-ready database for chats and user data.
 - **Modern Dev Experience**: TypeScript, ESLint, Prettier, and more.
 
