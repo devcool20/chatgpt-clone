@@ -211,56 +211,19 @@ export function Chat({
     Promise.resolve().then(() => reload());
   };
 
-
-
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   // Show scroll-to-bottom arrow if not at bottom and chat is scrollable
   useEffect(() => {
     const checkScrollState = () => {
-      const el = scrollRef.current;
-      if (!el) {
-        console.log('No scroll element found');
-        setShowScrollDown(false);
-        return;
-      }
-      
-      const scrollHeight = el.scrollHeight;
-      const scrollTop = el.scrollTop;
-      const clientHeight = el.clientHeight;
-      
-      const isScrollable = scrollHeight > clientHeight + 5;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      const isNearBottom = distanceFromBottom < 50; // Reduced threshold
-      
-      const shouldShow = isScrollable && !isNearBottom;
-      
-      console.log('Scroll state:', {
-        scrollHeight,
-        scrollTop,
-        clientHeight,
-        isScrollable,
-        distanceFromBottom,
-        isNearBottom,
-        shouldShow,
-        messagesLength: messages.length
-      });
-      
-             setShowScrollDown(shouldShow);
+      setShowScrollDown(true); // Force always visible for testing
     };
-
     const el = scrollRef.current;
     if (el) {
       el.addEventListener('scroll', checkScrollState);
       window.addEventListener('resize', checkScrollState);
     }
-    
-    // Check multiple times to ensure it works
     checkScrollState();
-    setTimeout(checkScrollState, 100);
-    setTimeout(checkScrollState, 500);
-    setTimeout(checkScrollState, 1000);
-    
     return () => {
       if (el) {
         el.removeEventListener('scroll', checkScrollState);
@@ -720,21 +683,24 @@ export function Chat({
           {/* Scroll to bottom arrow - fixed position outside scroll container */}
           <button
             onClick={() => {
-              console.log('Arrow clicked, scrolling to bottom');
+              console.log('Scroll-to-bottom button clicked. scrollRef.current:', scrollRef.current);
               if (scrollRef.current) {
                 scrollRef.current.scrollTo({
                   top: scrollRef.current.scrollHeight,
                   behavior: "smooth"
                 });
+              } else {
+                console.warn('Scroll-to-bottom: scrollRef.current is null, falling back to window.scrollTo');
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
               }
             }}
             className={`fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-[#2f2f2f] text-white rounded-full shadow-lg size-8 flex items-center justify-center border border-zinc-600 hover:bg-zinc-700 transition-all${
-              showScrollDown ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              showScrollDown ? ' opacity-100' : ' opacity-0 pointer-events-none'
             }`}
             aria-label="Scroll to bottom"
           >
             <ArrowDown className="size-4" />
-                      </button>
+          </button>
             
           {/* Input bar */}
           <form
