@@ -552,7 +552,7 @@ export function Chat({
                               if (typeof msg.content === 'string') {
                                 return msg.content;
                               } else if (Array.isArray(msg.content)) {
-                                return msg.content
+                                return (msg.content as any[])
                                   .filter((item: any) => item.type === 'text')
                                   .map((item: any) => item.text)
                                   .join('');
@@ -570,7 +570,7 @@ export function Chat({
                               if (typeof msg.content === 'string') {
                                 return msg.content;
                               } else if (Array.isArray(msg.content)) {
-                                return msg.content
+                                return (msg.content as any[])
                                   .filter((item: any) => item.type === 'text')
                                   .map((item: any) => item.text)
                                   .join('');
@@ -592,7 +592,7 @@ export function Chat({
                               if (typeof msg.content === 'string') {
                                 return msg.content;
                               } else if (Array.isArray(msg.content)) {
-                                return msg.content
+                                return (msg.content as any[])
                                   .filter((item: any) => item.type === 'text')
                                   .map((item: any) => item.text)
                                   .join('');
@@ -619,7 +619,7 @@ export function Chat({
                           if (typeof msg.content === 'string') {
                             textContent = msg.content;
                           } else if (Array.isArray(msg.content)) {
-                            textContent = msg.content
+                            textContent = (msg.content as any[])
                               .map((item: any) => {
                                 if (typeof item === 'string') return item;
                                 if (item && typeof item === 'object') {
@@ -630,8 +630,8 @@ export function Chat({
                               })
                               .join('');
                           } else if (msg.content && typeof msg.content === 'object') {
-                            if (typeof msg.content.text === 'string') textContent = msg.content.text;
-                            else if (typeof msg.content.value === 'string') textContent = msg.content.value;
+                            if (typeof (msg.content as any).text === 'string') textContent = (msg.content as any).text;
+                            else if (typeof (msg.content as any).value === 'string') textContent = (msg.content as any).value;
                             else textContent = JSON.stringify(msg.content);
                           } else {
                             textContent = String(msg.content ?? '');
@@ -656,7 +656,7 @@ export function Chat({
                               if (typeof msg.content === 'string') {
                                 return msg.content;
                               } else if (Array.isArray(msg.content)) {
-                                return msg.content
+                                return (msg.content as any[])
                                   .filter((item: any) => item.type === 'text')
                                   .map((item: any) => item.text)
                                   .join('');

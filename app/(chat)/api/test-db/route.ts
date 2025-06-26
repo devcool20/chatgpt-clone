@@ -1,5 +1,6 @@
 import { getAuth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
+
 import { getChatsByUserId } from '@/lib/mongo-chat';
 
 export async function GET(request: NextRequest) {
@@ -30,6 +31,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Database debug error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 } 

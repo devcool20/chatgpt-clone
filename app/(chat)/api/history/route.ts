@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
             } else if (Array.isArray(firstMessage.content)) {
               // Handle array format
               const textParts = firstMessage.content
-                .filter(item => item && (item.type === 'text' || typeof item === 'string'))
-                .map(item => {
+                .filter((item: any) => item && (item.type === 'text' || typeof item === 'string'))
+                .map((item: any) => {
                   if (typeof item === 'string') return item;
                   if (item.text) return item.text;
                   if (item.value) return item.value;
