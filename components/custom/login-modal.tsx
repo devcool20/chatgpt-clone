@@ -49,7 +49,10 @@ export function LoginModal() {
         </AlertDialogHeader>
         <AlertDialogFooter className="flex flex-col sm:flex-col gap-2">
           <SignInButton mode="modal">
-            <Button className="w-full">
+            <Button
+              className="w-full"
+              onClick={() => setShowModal(false)}
+            >
               Sign In
             </Button>
           </SignInButton>
